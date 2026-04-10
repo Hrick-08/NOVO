@@ -1,0 +1,42 @@
+export const Colors = {
+  dark: {
+    text: '#ECEDEE',
+    background: '#0D0D0F',
+    card: '#1A1A1E',
+    cardElevated: '#252529',
+    tint: '#4ADE80',
+    tintSecondary: '#22D3EE',
+    icon: '#9BA1A6',
+    tabIconDefault: '#9BA1A6',
+    tabIconSelected: '#4ADE80',
+    border: '#2D2D32',
+    success: '#4ADE80',
+    warning: '#FBBF24',
+    error: '#F87171',
+  },
+  light: {
+    text: '#11181C',
+    background: '#F8FAFC',
+    card: '#FFFFFF',
+    cardElevated: '#F1F5F9',
+    tint: '#0A7EA4',
+    icon: '#687076',
+    tabIconDefault: '#687076',
+    tabIconSelected: '#0A7EA4',
+    border: '#E2E8F0',
+    success: '#10B981',
+    warning: '#F59E0B',
+    error: '#EF4444',
+  },
+};
+
+export const BASE_URL = 'http://10.175.243.174:8000';
+
+export const UPI_APPS = [
+  { name: 'GPay', scheme: 'gpay://', icon: 'google' },
+  { name: 'PhonePe', scheme: 'phonepe://', icon: 'phone' },
+  { name: 'Paytm', scheme: 'paytmmp://', icon: 'wallet' },
+  { name: 'Other UPI', scheme: 'upi://', icon: 'apps' },
+];
+
+export const DEEPLINK_SCHEME = 'payscan://';
