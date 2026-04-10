@@ -182,30 +182,30 @@ export async function getMonthlySummary(userId: number): Promise<MonthlySummary>
   return response.json();
 }
 
-export async function parseQRCode(imageUri: string): Promise<{
-  pa: string;
-  pn: string;
-  am: string;
-  tn: string;
-}> {
-  const formData = new FormData();
-  const extension = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
-  const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
+// export async function parseQRCode(imageUri: string): Promise<{
+//   pa: string;
+//   pn: string;
+//   am: string;
+//   tn: string;
+// }> {
+//   const formData = new FormData();
+//   const extension = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+//   const mimeType = extension === 'png' ? 'image/png' : 'image/jpeg';
   
-  formData.append('file', {
-    uri: imageUri,
-    type: mimeType,
-    name: `qr.${extension}`,
-  } as any);
+//   formData.append('file', {
+//     uri: imageUri,
+//     type: mimeType,
+//     name: `qr.${extension}`,
+//   } as any);
 
-  const response = await fetch(`${BASE_URL}/qr/parse`, {
-    method: 'POST',
-    body: formData,
-  });
+//   const response = await fetch(`${BASE_URL}/qr/parse`, {
+//     method: 'POST',
+//     body: formData,
+//   });
   
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Failed to parse QR code');
-  }
-  return response.json();
-}
+//   if (!response.ok) {
+//     const errorText = await response.text();
+//     throw new Error(errorText || 'Failed to parse QR code');
+//   }
+//   return response.json();
+// }

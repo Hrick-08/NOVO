@@ -46,11 +46,12 @@ export default function ConfirmScreen() {
         parseInt(userId || '0')
       );
 
-      const upiLink = `upi://pay?pa=${encodeURIComponent(qrData.pa)}&pn=${encodeURIComponent(qrData.pn || '')}&am=${qrData.am || ''}&tn=${encodeURIComponent(txnRef)}`;
-      
-      const canOpen = await Linking.canOpenURL(appScheme);
+      const upiLink = `${appScheme}pa=${encodeURIComponent(qrData.pa)}&pn=${encodeURIComponent(qrData.pn || '')}&am=${qrData.am || ''}&tn=${encodeURIComponent(txnRef)}`;
+
+      const canOpen = await Linking.canOpenURL(upiLink);
+
       if (canOpen) {
-        await Linking.openURL(upiLink.replace('upi://', appScheme));
+        await Linking.openURL(upiLink);
       } else {
         await Linking.openURL(upiLink);
       }

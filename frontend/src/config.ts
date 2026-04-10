@@ -33,10 +33,11 @@ export const Colors = {
 export const BASE_URL = 'http://10.175.243.174:8000';
 
 export const UPI_APPS = [
-  { name: 'GPay', scheme: 'gpay://', icon: 'google' },
-  { name: 'PhonePe', scheme: 'phonepe://', icon: 'phone' },
-  { name: 'Paytm', scheme: 'paytmmp://', icon: 'wallet' },
-  { name: 'Other UPI', scheme: 'upi://', icon: 'apps' },
+  { name: 'GPay', scheme: 'gpay://upi/pay?', icon: 'google' },
+  { name: 'PhonePe', scheme: 'phonepe://upi/pay?', icon: 'phone' },
+  { name: 'Paytm', scheme: 'paytm://upi/pay?', icon: 'paytm' },
+  // { name: 'BHIM', scheme: 'bhim://upi/pay?', icon: 'bhim' },
+  { name: 'Other UPI', scheme: 'upi://pay?', icon: 'apps' },
 ];
 
 export const DEEPLINK_SCHEME = 'payscan://';
