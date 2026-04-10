@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button, Input } from '@/src/components';
-import { Colors, DEEPLINK_SCHEME } from '@/src/config';
-import { register } from '@/src/hooks/useApi';
-import { useAppStore } from '@/src/store/useAppStore';
+import { Button, Input } from '@/components';
+import { Colors } from '@/config/theme';
+import { DEEPLINK_SCHEME } from '@/config/api';
+import { register } from '@/hooks/useApi';
+import { useAppStore } from '@/store/useAppStore';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);

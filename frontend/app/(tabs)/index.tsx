@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Card, Button, PaymentItem } from '@/src/components';
-import { Colors } from '@/src/config';
-import { getPaymentHistory, getMonthlySummary } from '@/src/hooks/useApi';
-import { useAppStore } from '@/src/store/useAppStore';
+import { Card, Button, PaymentItem } from '@/components';
+import { Colors } from '@/config/theme';
+import { getPaymentHistory, getMonthlySummary } from '@/hooks/useApi';
+import { useAppStore } from '@/store/useAppStore';
 
 export default function HomeScreen() {
   const { user } = useAppStore();

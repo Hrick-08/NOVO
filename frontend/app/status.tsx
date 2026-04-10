@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button, Card } from '@/src/components';
-import { Colors } from '@/src/config';
-import { getPaymentStatus, updatePaymentStatus } from '@/src/hooks/useApi';
+import { Button, Card } from '@/components';
+import { Colors } from '@/config/theme';
+import { getPaymentStatus, updatePaymentStatus } from '@/hooks/useApi';
 
 export default function StatusScreen() {
   const params = useLocalSearchParams<{ txnRef: string }>();

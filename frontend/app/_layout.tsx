@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Colors } from '@/src/config';
+import { Colors } from '@/config/theme';
 
 export default function RootLayout() {
   const colors = Colors.dark;

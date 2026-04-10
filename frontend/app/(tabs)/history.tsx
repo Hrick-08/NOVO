@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PaymentItem, Loading } from '@/src/components';
-import { Colors } from '@/src/config';
-import { getPaymentHistory } from '@/src/hooks/useApi';
+import { PaymentItem, Loading } from '@/components';
+import { Colors } from '@/config/theme';
+import { getPaymentHistory } from '@/hooks/useApi';
 
 export default function HistoryScreen() {
   const [history, setHistory] = useState<any[]>([]);

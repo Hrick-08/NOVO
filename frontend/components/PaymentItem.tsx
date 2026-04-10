@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors } from '../config';
+import { Colors } from '@/config/theme';
 
 interface PaymentItemProps {
   merchant_name: string;

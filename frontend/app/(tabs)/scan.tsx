@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, SafeAreaView, Alert, TouchableOpacity, Platform
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions, Camera } from 'expo-camera';
-import { Button } from '@/src/components';
-import { Colors } from '@/src/config';
+import { Button } from '@/components';
+import { Colors } from '@/config/theme';
 
 // Web-only: decode QR from image using browser BarcodeDetector API (Chrome/Edge/Android WebView)
 // with jsQR as fallback for Firefox/Safari — install with: npm install jsqr

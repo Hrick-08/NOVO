@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, Alert, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Button, Card, Loading } from '@/src/components';
-import { Colors, UPI_APPS, DEEPLINK_SCHEME } from '@/src/config';
-import { logPayment } from '@/src/hooks/useApi';
+import { Button, Card, Loading } from '@/components';
+import { Colors } from '@/config/theme';
+import { UPI_APPS, DEEPLINK_SCHEME } from '@/config/api';
+import { logPayment } from '@/hooks/useApi';
 
 interface QRData {
   pa: string;

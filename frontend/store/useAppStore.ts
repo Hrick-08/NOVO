@@ -49,5 +49,10 @@ export const useAppStore = create<AppState>((set) => ({
   setPaymentHistory: (history) => set({ paymentHistory: history }),
   setMonthlySummary: (summary) => set({ monthlySummary: summary }),
   setLoading: (loading) => set({ isLoading: loading }),
-  logout: () => set({ user: null, currentPayment: null, paymentHistory: [], monthlySummary: null }),
+  logout: () => set({
+    user: null,
+    currentPayment: null,
+    paymentHistory: [],
+    monthlySummary: null,
+  }),
 }));

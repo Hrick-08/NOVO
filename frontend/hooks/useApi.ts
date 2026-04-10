@@ -1,4 +1,4 @@
-import { BASE_URL } from '../config';
+import { BASE_URL } from '@/config/api';
 
 export interface User {
   user_id?: number;
@@ -197,15 +197,3 @@ export async function getMonthlySummary(userId: number): Promise<MonthlySummary>
 //     type: mimeType,
 //     name: `qr.${extension}`,
 //   } as any);
-
-//   const response = await fetch(`${BASE_URL}/qr/parse`, {
-//     method: 'POST',
-//     body: formData,
-//   });
-  
-//   if (!response.ok) {
-//     const errorText = await response.text();
-//     throw new Error(errorText || 'Failed to parse QR code');
-//   }
-//   return response.json();
-// }

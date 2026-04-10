@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 
-import { Colors } from '@/src/config';
+import { Colors } from '@/config/theme';
 
 export default function TabLayout() {
   const colors = Colors.dark;
