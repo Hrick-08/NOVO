@@ -63,56 +63,50 @@ Payment-app/
 │   ├── main.py             # Main application entry point
 │   ├── requirements.txt     # Python dependencies
 │   └── routers/            # API route handlers
-├── frontend/               # React Native Expo app
-│   ├── package.json        # Node.js dependencies
-│   ├── tsconfig.json       # TypeScript configuration
-│   ├── eslint.config.js    # ESLint configuration
-│   ├── app.json            # Expo app configuration
-│   ├── expo-env.d.ts       # Expo environment types
-│   ├── app/                # Expo Router screens
-│   │   ├── _layout.tsx     # Root layout
-│   │   ├── index.tsx       # Login/Register screen
-│   │   ├── confirm.tsx     # Payment confirmation screen
-│   │   ├── status.tsx      # Payment status tracking
-│   │   └── (tabs)/         # Tab navigation
-│   │       ├── _layout.tsx # Tab layout
-│   │       ├── index.tsx   # Home screen
-│   │       ├── scan.tsx    # QR Scanner screen
-│   │       └── history.tsx # Transaction history screen
-│   ├── assets/             # Images and static assets
-│   │   └── images/
-│   ├── components/         # Reusable UI components
-│   │   ├── external-link.tsx
-│   │   ├── haptic-tab.tsx
-│   │   ├── hello-wave.tsx
-│   │   ├── parallax-scroll-view.tsx
-│   │   ├── themed-text.tsx
-│   │   ├── themed-view.tsx
-│   │   └── ui/             # UI utility components
-│   │       ├── collapsible.tsx
-│   │       ├── icon-symbol.ios.tsx
-│   │       └── icon-symbol.tsx
-│   ├── constants/          # Constants and configuration
-│   │   └── theme.ts        # Theme configuration
-│   ├── hooks/              # Global hooks
-│   │   ├── use-color-scheme.ts
-│   │   ├── use-color-scheme.web.ts
-│   │   └── use-theme-color.ts
-│   ├── scripts/            # Utility scripts
-│   │   └── reset-project.js
-│   └── src/                # Shared application code
-│       ├── config.ts       # API config and settings
-│       ├── components/     # Business logic components
-│       │   ├── Button.tsx
-│       │   ├── Card.tsx
-│       │   ├── Input.tsx
-│       │   ├── Loading.tsx
-│       │   ├── PaymentItem.tsx
-│       │   └── index.ts
-│       ├── hooks/          # Custom hooks
-│       │   └── useApi.ts
-│       └── store/          # State management (Zustand)
-│           └── useAppStore.ts
+└── frontend/               # React Native Expo app
+    ├── package.json        # Node.js dependencies
+    ├── tsconfig.json       # TypeScript configuration
+    ├── eslint.config.js    # ESLint configuration
+    ├── app.json            # Expo app configuration
+    ├── expo-env.d.ts       # Expo environment types
+    ├── README.md           # Frontend documentation
+    ├── app/                # Expo Router screens
+    │   ├── _layout.tsx     # Root layout
+    │   ├── index.tsx       # Login/Register screen
+    │   ├── confirm.tsx     # Payment confirmation screen
+    │   ├── status.tsx      # Payment status tracking
+    │   └── (tabs)/         # Tab navigation
+    │       ├── _layout.tsx # Tab layout
+    │       ├── index.tsx   # Home screen
+    │       ├── scan.tsx    # QR Scanner screen
+    │       └── history.tsx # Transaction history screen
+    ├── assets/             # Images and static assets
+    │   └── images/
+    ├── components/         # Reusable UI components
+    │   ├── Button.tsx
+    │   ├── Card.tsx
+    │   ├── Input.tsx
+    │   ├── Loading.tsx
+    │   ├── PaymentItem.tsx
+    │   ├── index.ts
+    │   ├── themed-text.tsx
+    │   ├── themed-view.tsx
+    │   └── ui/             # UI utility components
+    │       ├── collapsible.tsx
+    │       ├── icon-symbol.ios.tsx
+    │       └── icon-symbol.tsx
+    ├── config/             # Configuration
+    │   ├── api.ts          # API config and settings
+    │   └── theme.ts        # Theme configuration
+    ├── hooks/              # Custom hooks
+    │   ├── use-color-scheme.ts
+    │   ├── use-color-scheme.web.ts
+    │   ├── use-theme-color.ts
+    │   └── useApi.ts
+    ├── scripts/            # Utility scripts
+    │   └── reset-project.js
+    └── store/              # State management (Zustand)
+        └── useAppStore.ts
 ```
 
 ## API Endpoints
