@@ -7,6 +7,8 @@ import { Colors } from '@/config/theme';
 import { UPI_APPS, DEEPLINK_SCHEME } from '@/config/api';
 import { logPayment } from '@/hooks/useApi';
 
+import * as IntentLauncher from 'expo-intent-launcher';
+
 interface QRData {
   pa: string;
   pn: string;
@@ -47,15 +49,40 @@ export default function ConfirmScreen() {
         parseInt(userId || '0')
       );
 
-      const upiLink = `${appScheme}pa=${encodeURIComponent(qrData.pa)}&pn=${encodeURIComponent(qrData.pn || '')}&am=${qrData.am || ''}&tn=${encodeURIComponent(txnRef)}`;
+      // const upiLink = `${appScheme}pa=${encodeURIComponent(qrData.pa)}&pn=${encodeURIComponent(qrData.pn || '')}&am=${qrData.am || ''}&tn=${encodeURIComponent(txnRef)}`;
 
-      const canOpen = await Linking.canOpenURL(upiLink);
+      // const upiLink =
+      // `upi://pay?pa=${encodeURIComponent(qrData.pa)}` +
+      // `&pn=${encodeURIComponent(qrData.pn || '')}` +
+      // `&cu=INR`;
 
-      if (canOpen) {
-        await Linking.openURL(upiLink);
-      } else {
-        await Linking.openURL(upiLink);
-      }
+  //     const upiLink =
+  // `intent://pay?pa=${encodeURIComponent(qrData.pa)}&pn=${encodeURIComponent(qrData.pn || '')}&cu=INR#Intent;` +
+  // `scheme=upi;package=com.google.android.apps.nbu.paisa.user;end`;
+
+  //     await Linking.openURL(upiLink);
+
+  
+
+const uri =
+  `upi://pay?pa=${encodeURIComponent(qrData.pa)}` +
+  `&pn=${encodeURIComponent(qrData.pn || '')}` +
+  `&cu=INR`;
+
+await IntentLauncher.startActivityAsync(
+  'android.intent.action.VIEW',
+  {
+    data: uri,
+    packageName: 'com.google.android.apps.nbu.paisa.user',
+  }
+);
+      // const canOpen = await Linking.canOpenURL(upiLink);
+
+      // if (canOpen) {
+      //   await Linking.openURL(upiLink);
+      // } else {
+      //   await Linking.openURL(upiLink);
+      // }
 
       router.replace({
         pathname: '/status',
