@@ -32,6 +32,7 @@ frontend/yarn-error.*
 
 # local env files
 .env*.local
+myenv/
 
 # typescript
 frontend/*.tsbuildinfo
