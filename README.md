@@ -38,13 +38,12 @@ Novo is a financial super app built for Gen-Z India. It combines UPI payments, a
 
 ## Features
 
-- **UPI Payments** — scan any merchant QR and pay instantly
+- **UPI Payments** — scan any merchant QR and pay instantly with Razorpay
 - **Nova Coins** — earn 1 coin per ₹10 spent, with streak multipliers (1x / 1.5x / 2x)
-- **Coin Store** — redeem coins for vouchers and cashback
-- **Community Events** — weekly challenges, marathons, and leaderboards
-- **AI Investing Agent** — conversational agent that explains, simulates, and guides investments
-- **Portfolio Builder** — RAG-powered personalized investment allocation
-- **Financial Personality** — money archetype quiz, Broke-to-Bougie roadmap, weekly spending roast
+- **Coin Store** — redeem coins for Novo merch, Amazon & Flipkart gift cards
+- **Purchase History** — track all transactions and redemptions
+- **Streak Multiplier System** — unlock 1.5x and 2x coin multipliers based on transaction frequency
+- **Coming Soon** — AI investing agent, portfolio builder, community events, financial personality quiz
 
 ---
 
@@ -52,12 +51,12 @@ Novo is a financial super app built for Gen-Z India. It combines UPI payments, a
 
 | Layer | Technology |
 |---|---|
-| Frontend | React Native (Expo) · TypeScript · Tailwind (NativeWind) |
+| Frontend | React Native (Expo) · TypeScript · React Navigation |
 | Backend | FastAPI · SQLAlchemy · SQLite |
 | Payments | Razorpay SDK |
-| AI Agent | GPT-4o · Gemini Embedding 2 · Qdrant (RAG) |
+| AI Agent | Coming soon — to be integrated later |
 | State | Zustand · AsyncStorage |
-| Auth | Header-based user ID (hackathon scope) |
+| Auth | Email/password (pbkdf2_sha256) + stateless header-based sessions |
 
 ---
 
@@ -80,16 +79,24 @@ NOVO/
 └── frontend/
     ├── app/                # Expo Router screens
     │   ├── (tabs)/         # Tab navigator screens
-    │   │   ├── scan.tsx    # QR scanner + Razorpay helpers
-    │   │   └── ...
+    │   │   ├── _layout.tsx # Tab navigator setup
+    │   │   ├── index.tsx   # Home — payment/coin summary
+    │   │   ├── scan.tsx    # QR scanner + Razorpay UPI input
+    │   │   ├── history.tsx # Payment transaction history
+    │   │   ├── rewards.tsx # Coin redeem history + streak display
+    │   │   ├── collections.tsx # Coin store (merch, coupons)
+    │   │   ├── invest.tsx  # Market preview (coming soon)
+    │   │   └── profile.tsx # User profile + account settings
     │   ├── confirm.tsx     # Payment confirmation + Razorpay checkout
-    │   └── success.tsx     # Post-payment success + coins earned
+    │   ├── status.tsx      # Payment status check
+    │   ├── success.tsx     # Post-payment success + coins earned
+    │   └── _layout.tsx     # Main router layout
     ├── assets/             # Images, fonts, icons
-    ├── components/         # Shared UI components (Button, Card, Loading)
+    ├── components/         # Shared UI components (Button, Card, Loading, etc.)
     ├── config/             # Theme, API base URL, UPI app config
-    ├── hooks/              # Custom React hooks (useApi, etc.)
-    ├── scripts/            # Utility scripts
-    ├── store/              # Zustand global state
+    ├── hooks/              # Custom React hooks (useApi, useColorScheme, etc.)
+    ├── scripts/            # Utility scripts (reset-project.js)
+    ├── store/              # Zustand global state (useAppStore)
     ├── app.json            # Expo app config
     └── expo-env.d.ts       # Expo TypeScript declarations
 ```
@@ -200,10 +207,13 @@ EXPO_PUBLIC_BASE_URL=http://<your-backend-ip>:8000
 
 Full interactive docs available at `http://localhost:8000/docs`
 
-All endpoints except `/auth/register`, `/auth/login`, `/test`, `/test-post`, and `/health` require the header:
-```
-X-User-Id: <user_id>
-```
+### Authentication Flow
+
+1. **Register or Login** — POST to `/auth/register` or `/auth/login` with email and password
+2. **Receive user_id** — The response includes your `user_id`
+3. **Authenticate requests** — Include the `X-User-Id: <user_id>` header in all protected endpoints
+
+**Protected Endpoints** require `X-User-Id` header (all except `/auth/register`, `/auth/login`, `/test`, `/test-post`, `/health`)
 
 ### 🔧 Test
 
@@ -217,10 +227,10 @@ X-User-Id: <user_id>
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/auth/register` | Register a new user |
-| `POST` | `/auth/login` | Login existing user |
-| `POST` | `/auth/logout` | Logout current session |
-| `GET` | `/auth/me` | Get current user + Nova Coin balance |
+| `POST` | `/auth/register` | Register a new user with email and password |
+| `POST` | `/auth/login` | Login with email and password, returns user_id |
+| `POST` | `/auth/logout` | Logout (validates user exists) |
+| `GET` | `/auth/me` | Get current user info + Nova Coin balance |
 
 ### 👤 Profile
 
