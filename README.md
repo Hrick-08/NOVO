@@ -165,25 +165,34 @@ npm install
 # Install Razorpay SDK
 npm install react-native-razorpay
 
-# Set your backend URL in config/api.ts
-# API_BASE_URL = "http://<your-local-ip>:8000"
+# Create .env file (see Environment Variables below)
+cp .env.example .env
+# Update EXPO_PUBLIC_BASE_URL with your backend URL
 
 # Start Expo
 npx expo start
 ```
 
-> **Note:** Use your machine's local IP address (not `localhost`) in `API_BASE_URL` when testing on a physical Android device.
+> **Note:** Use your machine's local IP address (not `localhost`) in `EXPO_PUBLIC_BASE_URL` when testing on a physical Android device.
 
 ---
 
 ### Environment Variables
 
-Create `backend/.env`:
+**Backend** — Create `backend/.env`:
 
 ```env
 RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
 RAZORPAY_KEY_SECRET=your_secret_here
 ```
+
+**Frontend** — Create `frontend/.env`:
+
+```env
+EXPO_PUBLIC_BASE_URL=http://<your-backend-ip>:8000
+```
+
+> **Note:** Variables in `frontend/.env` must be prefixed with `EXPO_PUBLIC_` to be accessible in the Expo app. Never commit `.env` files to version control.
 
 ---
 
