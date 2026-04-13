@@ -17,6 +17,7 @@ frontend/*.p8
 frontend/*.p12
 frontend/*.key
 frontend/*.mobileprovision
+frontend/.env
 
 # Metro
 frontend/.metro-health-check*
