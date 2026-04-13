@@ -1,160 +1,122 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Alert, TouchableOpacity, Platform } from 'react-native';
-import { router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { CameraView, useCameraPermissions, Camera } from 'expo-camera';
-import { Button } from '@/components';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { Colors } from '@/config/theme';
+import { useAppStore } from '@/store/useAppStore';
+import { Card } from '@/components';
 
+const MOCK_STOCKS = [
+  { name: 'RELIANCE', fullName: 'Reliance Industries', price: 2947.5, change: +1.23, changeAmt: +35.7 },
+  { name: 'TCS', fullName: 'Tata Consultancy Services', price: 3812.0, change: -0.54, changeAmt: -20.8 },
+  { name: 'INFY', fullName: 'Infosys Ltd', price: 1432.3, change: +0.89, changeAmt: +12.6 },
+  { name: 'HDFC', fullName: 'HDFC Bank', price: 1654.8, change: +2.1, changeAmt: +34.1 },
+  { name: 'WIPRO', fullName: 'Wipro Ltd', price: 467.2, change: -1.02, changeAmt: -4.8 },
+];
 
+export default function InvestScreen() {
+  const colors = Colors.dark;
+  const novaCoins = useAppStore((s) => s.user?.nova_coins ?? 0);
 
-export default function InvestmentScreen() {
-  
-  }
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Nova Coins balance */}
+        <Card style={[styles.coinsCard, { borderColor: '#f59e0b44' }]}>
+          <View style={styles.coinsRow}>
+            <Text style={{ fontSize: 32 }}>🪙</Text>
+            <View style={{ marginLeft: 12 }}>
+              <Text style={[styles.coinsAmount, { color: '#f59e0b' }]}>
+                {novaCoins.toLocaleString()} Nova Coins
+              </Text>
+              <Text style={[styles.coinsDesc, { color: colors.icon }]}>
+                Earn coins by paying — redeem soon!
+              </Text>
+            </View>
+          </View>
+        </Card>
 
-//   const colors = Colors.dark;
+        {/* Coming soon banner */}
+        <View style={[styles.comingSoon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ fontSize: 36, marginBottom: 8 }}>📈</Text>
+          <Text style={[styles.comingSoonTitle, { color: colors.text }]}>
+            Invest with Nova Coins
+          </Text>
+          <Text style={[styles.comingSoonDesc, { color: colors.icon }]}>
+            Soon you'll be able to use your Nova Coins to invest in top Indian stocks directly from PayScan.
+          </Text>
+          <View style={[styles.comingSoonBadge, { backgroundColor: '#1a2a1a' }]}>
+            <Text style={{ color: colors.tint, fontWeight: '700', fontSize: 13 }}>🚀 Coming Soon</Text>
+          </View>
+        </View>
 
-//   return (
-//     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-//       <View style={styles.cameraContainer}>
-//         <CameraView
-//           style={styles.camera}
-//           facing="back"
-//           barcodeScannerSettings={{
-//             barcodeTypes: ['qr'],
-//           }}
-//           onBarcodeScanned={handleBarCodeScanned}
-//         >
-//           <View style={styles.overlay}>
-//             <View style={styles.scanArea}>
-//               <View style={[styles.corner, styles.topLeft]} />
-//               <View style={[styles.corner, styles.topRight]} />
-//               <View style={[styles.corner, styles.bottomLeft]} />
-//               <View style={[styles.corner, styles.bottomRight]} />
-//             </View>
-//           </View>
-//         </CameraView>
-//       </View>
+        {/* Stock preview (read-only) */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Preview</Text>
+        {MOCK_STOCKS.map((stock) => {
+          const isGain = stock.change >= 0;
+          const color = isGain ? colors.success : colors.error;
+          return (
+            <View
+              key={stock.name}
+              style={[styles.stockRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <View style={[styles.stockBadge, { backgroundColor: isGain ? '#0d2a1a' : '#2a0d0d' }]}>
+                <Text style={[styles.stockTicker, { color }]}>{stock.name}</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.stockFullName, { color: colors.text }]}>{stock.fullName}</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.stockPrice, { color: colors.text }]}>
+                  ₹{stock.price.toFixed(1)}
+                </Text>
+                <Text style={[styles.stockChange, { color }]}>
+                  {isGain ? '▲' : '▼'} {Math.abs(stock.change).toFixed(2)}%
+                </Text>
+              </View>
+            </View>
+          );
+        })}
 
-//       <View style={styles.footer}>
-//         <Text style={[styles.hint, { color: colors.icon }]}>
-//           Position the QR code within the frame
-//         </Text>
+        <View style={{ height: 80 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
 
-//         <View style={styles.actions}>
-//           <TouchableOpacity
-//             style={[styles.action, { backgroundColor: colors.card }]}
-//             onPress={handlePickImage}
-//           >
-//             <Text style={[styles.actionText, { color: colors.text }]}>📷 Gallery</Text>
-//           </TouchableOpacity>
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  content: { padding: 20 },
 
-//           {scanned && (
-//             <Button
-//               title="Scan Again"
-//               onPress={() => setScanned(false)}
-//               variant="outline"
-//             />
-//           )}
-//         </View>
-//       </View>
-//     </SafeAreaView>
-//   );
-// }
+  coinsCard: {
+    marginBottom: 20,
+    padding: 16,
+    borderWidth: 1,
+  },
+  coinsRow: { flexDirection: 'row', alignItems: 'center' },
+  coinsAmount: { fontSize: 20, fontWeight: '700' },
+  coinsDesc: { fontSize: 12, marginTop: 4 },
 
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//   },
-//   cameraContainer: {
-//     flex: 1,
-//   },
-//   camera: {
-//     flex: 1,
-//   },
-//   overlay: {
-//     flex: 1,
-//     backgroundColor: 'rgba(0,0,0,0.5)',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   scanArea: {
-//     width: 250,
-//     height: 250,
-//     backgroundColor: 'transparent',
-//     position: 'relative',
-//   },
-//   corner: {
-//     position: 'absolute',
-//     width: 30,
-//     height: 30,
-//     borderColor: Colors.dark.tint,
-//   },
-//   topLeft: {
-//     top: 0,
-//     left: 0,
-//     borderTopWidth: 3,
-//     borderLeftWidth: 3,
-//   },
-//   topRight: {
-//     top: 0,
-//     right: 0,
-//     borderTopWidth: 3,
-//     borderRightWidth: 3,
-//   },
-//   bottomLeft: {
-//     bottom: 0,
-//     left: 0,
-//     borderBottomWidth: 3,
-//     borderLeftWidth: 3,
-//   },
-//   bottomRight: {
-//     bottom: 0,
-//     right: 0,
-//     borderBottomWidth: 3,
-//     borderRightWidth: 3,
-//   },
-//   footer: {
-//     padding: 20,
-//     backgroundColor: Colors.dark.background,
-//   },
-//   hint: {
-//     fontSize: 14,
-//     textAlign: 'center',
-//     marginBottom: 20,
-//   },
-//   actions: {
-//     flexDirection: 'row',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     gap: 12,
-//   },
-//   action: {
-//     paddingHorizontal: 20,
-//     paddingVertical: 12,
-//     borderRadius: 12,
-//   },
-//   actionText: {
-//     fontSize: 16,
-//     fontWeight: '500',
-//   },
-//   secondaryButton: {
-//     marginTop: 12,
-//   },
-//   permissionContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 24,
-//   },
-//   text: {
-//     fontSize: 18,
-//     fontWeight: '600',
-//     marginBottom: 8,
-//   },
-//   subtext: {
-//     fontSize: 14,
-//     textAlign: 'center',
-//     marginBottom: 24,
-//   },
-// });
+  comingSoon: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  comingSoonTitle: { fontSize: 18, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
+  comingSoonDesc: { fontSize: 14, textAlign: 'center', lineHeight: 21, marginBottom: 16 },
+  comingSoonBadge: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  stockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+  },
+  stockBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  stockTicker: { fontSize: 12, fontWeight: '700' },
+  stockFullName: { fontSize: 13, fontWeight: '500' },
+  stockPrice: { fontSize: 14, fontWeight: '700' },
+  stockChange: { fontSize: 11, marginTop: 2, fontWeight: '600' },
+});

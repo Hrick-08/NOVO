@@ -47,5 +47,6 @@ frontend/android
 backend/__pycache__/
 backend/*.pyc
 backend/.env
+backend/env
 backend/.venv/
 backend/payscan.db

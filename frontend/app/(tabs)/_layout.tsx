@@ -1,18 +1,55 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import React from 'react';
-import { Platform, Text, View } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import { Svg, Path, Rect, Line, Circle, Polyline, Polygon } from 'react-native-svg';
 import { CoinDisplay } from '@/components/CoinDisplay';
-
-// In your component, fetch coins from your store/context:
-// const coins = useCoinsStore((s) => s.total);
-
-const coins = 1204
-
 import { Colors } from '@/config/theme';
+import { useAppStore } from '@/store/useAppStore';
 
 export default function TabLayout() {
   const colors = Colors.dark;
+  const novaCoins = useAppStore((s) => s.user?.nova_coins ?? 0);
+
+  const HeaderRight = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12, gap: 8 }}>
+      {/* Coins — tapping opens rewards */}
+      <TouchableOpacity onPress={() => router.push('/(tabs)/rewards')} activeOpacity={0.7}>
+        <CoinDisplay coins={novaCoins} />
+      </TouchableOpacity>
+      {/* Profile icon */}
+      <TouchableOpacity
+        onPress={() => router.push('/(tabs)/profile')}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          backgroundColor: colors.border,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        activeOpacity={0.7}
+      >
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+            stroke={colors.icon}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Circle
+            cx={12}
+            cy={7}
+            r={4}
+            stroke={colors.icon}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <Tabs
@@ -28,25 +65,19 @@ export default function TabLayout() {
           paddingTop: 8,
           position: 'absolute',
         },
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
+        headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
-      }}>
+        headerTitleStyle: { fontWeight: '600' },
+      }}
+    >
+      {/* ── Visible tabs ─────────────────────────────────────────────────── */}
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
           headerTitle: 'PayScan',
-          headerRight: () => (
-            <View style={{ marginRight: 4 }}>
-              <CoinDisplay coins={coins} />
-            </View>
-          ),
+          headerRight: () => <HeaderRight />,
         }}
       />
       <Tabs.Screen
@@ -55,11 +86,7 @@ export default function TabLayout() {
           title: 'Scan',
           tabBarIcon: ({ color }) => <TabIcon name="scan" color={color} />,
           headerTitle: 'Scan QR',
-          headerRight: () => (
-            <View style={{ marginRight: 4 }}>
-              <CoinDisplay coins={coins} />
-            </View>
-          ),
+          headerRight: () => <HeaderRight />,
         }}
       />
       <Tabs.Screen
@@ -68,11 +95,7 @@ export default function TabLayout() {
           title: 'History',
           tabBarIcon: ({ color }) => <TabIcon name="history" color={color} />,
           headerTitle: 'Transactions',
-          headerRight: () => (
-            <View style={{ marginRight: 4 }}>
-              <CoinDisplay coins={coins} />
-            </View>
-          ),
+          headerRight: () => <HeaderRight />,
         }}
       />
       <Tabs.Screen
@@ -80,25 +103,37 @@ export default function TabLayout() {
         options={{
           title: 'Invest',
           tabBarIcon: ({ color }) => <TabIcon name="invest" color={color} />,
-          headerTitle: 'Stocks',
-          headerRight: () => (
-            <View style={{ marginRight: 4 }}>
-              <CoinDisplay coins={coins} />
-            </View>
-          ),
+          headerTitle: 'Invest',
+          headerRight: () => <HeaderRight />,
         }}
       />
+      <Tabs.Screen
+        name="collections"
+        options={{
+          title: 'Shop',
+          tabBarIcon: ({ color }) => <TabIcon name="collections" color={color} />,
+          headerTitle: 'Collections',
+          headerRight: () => <HeaderRight />,
+        }}
+      />
+
+      {/* ── Hidden tabs (accessible via header icons only) ────────────────── */}
       <Tabs.Screen
         name="rewards"
         options={{
           title: 'Rewards',
-          tabBarIcon: ({ color }) => <TabIcon name="rewards" color={color} />,
-          headerTitle: 'Rewards',
-          headerRight: () => (
-            <View style={{ marginRight: 4 }}>
-              <CoinDisplay coins={coins} />
-            </View>
-          ),
+          headerTitle: 'My Rewards',
+          headerRight: () => <HeaderRight />,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          headerTitle: 'My Profile',
+          headerRight: () => <HeaderRight />,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tabs>
@@ -137,9 +172,12 @@ function TabIcon({ name, color }: { name: string; color: string }) {
           stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     ),
-    rewards: (c) => (
+    collections: (c) => (
       <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-        <Polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+        <Path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
+          stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        <Line x1={3} y1={6} x2={21} y2={6} stroke={c} strokeWidth={1.8} strokeLinecap="round" />
+        <Path d="M16 10a4 4 0 0 1-8 0"
           stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     ),

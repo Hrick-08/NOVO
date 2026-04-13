@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button, Input } from '@/components';
 import { Colors } from '@/config/theme';
 import { DEEPLINK_SCHEME } from '@/config/api';
-import { register } from '@/hooks/useApi';
+import { register, getCurrentUser } from '@/hooks/useApi';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function AuthScreen() {
@@ -25,7 +25,13 @@ export default function AuthScreen() {
       const userId = await AsyncStorage.getItem('userId');
       const userName = await AsyncStorage.getItem('userName');
       if (userId && userName) {
-        setUser({ id: parseInt(userId), name: userName, email: '' });
+        // Fetch full user profile (includes nova_coins)
+        try {
+          const fullUser = await getCurrentUser(parseInt(userId));
+          setUser({ id: fullUser.id, name: fullUser.name, email: fullUser.email, nova_coins: fullUser.nova_coins ?? 0 });
+        } catch {
+          setUser({ id: parseInt(userId), name: userName, email: '', nova_coins: 0 });
+        }
         router.replace('/(tabs)');
       }
     } catch (e) {
@@ -53,7 +59,13 @@ export default function AuthScreen() {
       const userId = user.user_id ?? user.id;
       await AsyncStorage.setItem('userId', userId.toString());
       await AsyncStorage.setItem('userName', user.name);
-      setUser({ id: userId, name: user.name, email });
+      // Fetch full profile to get nova_coins
+      try {
+        const fullUser = await getCurrentUser(userId);
+        setUser({ id: fullUser.id, name: fullUser.name, email, nova_coins: fullUser.nova_coins ?? 0 });
+      } catch {
+        setUser({ id: userId, name: user.name, email, nova_coins: 0 });
+      }
       router.replace('/(tabs)');
     } catch (e: any) {
       console.error('Auth error:', e);
