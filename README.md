@@ -16,7 +16,7 @@
 
 [![React Native](https://img.shields.io/badge/React_Native-Expo-0EA5E9?style=flat-square&logo=expo&logoColor=white)](#)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](#)
-[![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
+[![TypeScript](https://img.shields.io/badge/Frontend-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](#)
 [![Razorpay](https://img.shields.io/badge/Payments-Razorpay-072654?style=flat-square)](#)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)](#)
 [![Hackathon](https://img.shields.io/badge/Finvasia_Hackathon-2026-F59E0B?style=flat-square)](#)
