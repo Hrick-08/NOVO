@@ -53,4 +53,7 @@ backend/payscan.db
 backend/payscan.db-journal
 backend/payscan.db-shm
 backend/payscan.db-wal
-bakend/NOVO.db
+backend/NOVO.db
+backend/NOVO.db-journal
+backend/NOVO.db-shm
+backend/NOVO.db-wal
