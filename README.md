@@ -1,4 +1,4 @@
-# PayScan
+# NOVO
 
 A React Native (Expo) mobile app for scanning UPI QR codes and completing payments via your preferred UPI app (GPay, PhonePe, Paytm).
 
@@ -57,7 +57,7 @@ If running on a physical phone, update the API URL:
 ## Project Structure
 
 ```
-Payment-app/
+NOVO/
 ├── README.md               # Project documentation
 ├── backend/                # FastAPI backend
 │   ├── main.py             # Main application entry point
@@ -134,6 +134,6 @@ Payment-app/
 
 ## Notes
 
-- The app uses `payscan://` as the deep link scheme for UPI app callbacks
+- The app uses `NOVO://` as the deep link scheme for UPI app callbacks
 - All amounts are in INR (₹)
 - User ID is stored in AsyncStorage and sent as `X-User-Id` header

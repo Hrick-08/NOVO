@@ -50,3 +50,7 @@ backend/.env
 backend/env
 backend/.venv/
 backend/payscan.db
+backend/payscan.db-journal
+backend/payscan.db-shm
+backend/payscan.db-wal
+bakend/NOVO.db

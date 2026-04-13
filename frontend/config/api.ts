@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://43bgm094-8000.inc1.devtunnels.ms';
+export const BASE_URL = 'http://100.71.204.110:8000';
 
 export const UPI_APPS = [
   { name: 'GPay', scheme: 'gpay://upi/pay?', icon: 'google' },

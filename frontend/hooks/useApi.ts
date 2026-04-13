@@ -123,11 +123,20 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-export async function register(name: string, email: string): Promise<User> {
+export async function register(name: string, email: string, password?: string): Promise<User> {
   const res = await fetchWithTimeout(`${BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email }),
+    body: JSON.stringify({ name, email, password }),
+  });
+  return handleResponse<User>(res);
+}
+
+export async function login(email: string, password: string): Promise<User> {
+  const res = await fetchWithTimeout(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
   });
   return handleResponse<User>(res);
 }
@@ -146,12 +155,32 @@ export async function getCurrentUser(userId: number, forceRefresh = false): Prom
   return data;
 }
 
-export async function logout(): Promise<void> {
+export async function logout(userId?: number): Promise<void> {
+  // Call backend logout endpoint first (with userId if available)
+  try {
+    if (userId) {
+      console.log('Calling backend logout endpoint for userId:', userId);
+      const res = await fetchWithTimeout(`${BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: await getHeaders(userId),
+      });
+      const data = await handleResponse(res);
+      console.log('Backend logout response:', data);
+    }
+  } catch (e) {
+    console.log('Backend logout error (non-critical):', e);
+    // Continue with clearing storage even if backend call fails
+  }
+  
   // Clear ALL AsyncStorage keys — cache entries + session keys
   try {
+    console.log('Clearing all AsyncStorage keys');
     const allKeys = await AsyncStorage.getAllKeys();
+    console.log('Found AsyncStorage keys:', allKeys);
     if (allKeys.length > 0) await AsyncStorage.multiRemove(allKeys);
+    console.log('AsyncStorage cleared successfully');
   } catch {
+    console.log('Error clearing all keys, falling back to individual removal');
     // Fallback: remove known keys individually
     await AsyncStorage.multiRemove([
       'userId', 'userName', 'userEmail',

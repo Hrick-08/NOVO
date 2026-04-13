@@ -78,12 +78,24 @@ export default function ProfileScreen() {
         onPress: async () => {
           setLoggingOut(true);
           try {
-            // 1. Wipe ALL AsyncStorage — session keys + entire cache
-            await logout();
-            // 2. Reset Zustand so app doesn't re-hydrate stale user
+            const userId = user?.id;
+            console.log('Starting logout for user:', userId);
+            
+            // 1. Call backend logout endpoint + wipe AsyncStorage
+            await logout(userId);
+            console.log('Backend logout successful, storage cleared');
+            
+            // 2. Reset Zustand store
             setUser(null);
-            // 3. Navigate to root — expo-router sees no userId → shows auth
-            router.replace('/');
+            console.log('Zustand store cleared');
+            
+            // 3. Small delay and then navigate
+            setLoggingOut(false);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // 4. Navigate using push instead of replace to ensure proper navigation
+            console.log('Navigating to login screen');
+            router.push('/');
           } catch (err) {
             console.log('Logout error:', err);
             setLoggingOut(false);

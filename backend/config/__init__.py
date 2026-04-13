@@ -1,0 +1,14 @@
+"""Config module."""
+from .settings import *
+
+__all__ = [
+    "DATABASE_URL",
+    "RAZORPAY_KEY_ID",
+    "RAZORPAY_KEY_SECRET",
+    "BASE_COINS_DIVISOR",
+    "STREAK_MULTIPLIER_HIGH",
+    "STREAK_MULTIPLIER_MID",
+    "STREAK_MULTIPLIER_DEFAULT",
+    "STREAK_THRESHOLD_HIGH",
+    "STREAK_THRESHOLD_MID",
+]
