@@ -32,6 +32,7 @@ frontend/yarn-error.*
 
 # local env files
 .env*.local
+myenv/
 
 # typescript
 frontend/*.tsbuildinfo
@@ -46,6 +47,7 @@ frontend/android
 backend/__pycache__/
 backend/*.pyc
 backend/.env
+backend/env
 backend/.venv/
 backend/payscan.db
 backend/payscan.db-journal
