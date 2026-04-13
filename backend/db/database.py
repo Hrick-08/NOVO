@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
-DATABASE_URL = "sqlite:///./payscan.db"
+DATABASE_URL = "sqlite:///./NOVO.db"
 
 engine = create_engine(
     DATABASE_URL,

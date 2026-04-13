@@ -57,9 +57,15 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/logout")
-def logout():
-    """Logout user."""
-    return {"message": "Logged out successfully"}
+def logout(x_user_id: int = Header(alias="X-User-Id"), db: Session = Depends(get_db)):
+    """Logout user by validating user exists and clearing server-side session data if any."""
+    user = db.query(User).filter(User.id == x_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # In a stateless architecture, logout mainly involves client-side cleanup.
+    # But we validate user exists and return success.
+    return {"message": "Logged out successfully", "user_id": user.id}
 
 
 @router.get("/me")

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button, Input } from '@/components';
 import { Colors } from '@/config/theme';
@@ -20,6 +20,28 @@ export default function AuthScreen() {
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Re-check user when screen comes into focus (e.g., after logout)
+  useFocusEffect(
+    React.useCallback(() => {
+      const checkOnFocus = async () => {
+        const userId = await AsyncStorage.getItem('userId');
+        const userName = await AsyncStorage.getItem('userName');
+        if (!userId || !userName) {
+          // User logged out, reset form
+          setName('');
+          setEmail('');
+          setPassword('');
+          setError('');
+          setIsLogin(true);
+        }
+      };
+      checkOnFocus();
+      
+      // Cleanup function (optional but good practice)
+      return () => {};
+    }, [])
+  );
 
   const checkUser = async () => {
     try {
