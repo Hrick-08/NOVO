@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button, Input } from '@/components';
 import { Colors } from '@/config/theme';
@@ -15,11 +15,14 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const params = useLocalSearchParams<{ logout?: string }>();
   const { setUser } = useAppStore();
 
   useEffect(() => {
-    checkUser();
-  }, []);
+    if (params.logout !== 'true') {
+      checkUser();
+    }
+  }, [params.logout]);
 
   // Re-check user when screen comes into focus (e.g., after logout)
   useFocusEffect(
@@ -37,9 +40,9 @@ export default function AuthScreen() {
         }
       };
       checkOnFocus();
-      
+
       // Cleanup function (optional but good practice)
-      return () => {};
+      return () => { };
     }, [])
   );
 
@@ -85,7 +88,7 @@ export default function AuthScreen() {
     try {
       console.log('Starting auth with email:', email);
       let user: any;
-      
+
       if (isLogin) {
         // Login flow
         user = await login(email, password);
@@ -93,13 +96,13 @@ export default function AuthScreen() {
         // Register flow
         user = await register(name, email, password);
       }
-      
+
       console.log('Got user:', user);
       const userId = user.user_id ?? user.id;
       await AsyncStorage.setItem('userId', userId.toString());
       await AsyncStorage.setItem('userName', user.name);
       await AsyncStorage.setItem('userEmail', email);
-      
+
       // Fetch full profile to get nova_coins
       try {
         const fullUser = await getCurrentUser(userId);
@@ -170,7 +173,7 @@ export default function AuthScreen() {
             </Text>
             <Button
               title={isLogin ? 'Sign Up' : 'Sign In'}
-              onPress={() => { 
+              onPress={() => {
                 setIsLogin(!isLogin);
                 setError('');
                 setPassword('');

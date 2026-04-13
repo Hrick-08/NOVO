@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,13 @@ import {
   Platform,
 } from 'react-native';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { CameraView, useCameraPermissions, Camera } from 'expo-camera';
 import { Button } from '@/components';
 import { Colors } from '@/config/theme';
-import { BASE_URL } from '@/config/api';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// ─── Types (re-exported so confirm.tsx can import them) ───────────────────────
 
 export interface QRData {
   pa: string;
@@ -26,182 +24,7 @@ export interface QRData {
   tn: string;
 }
 
-// ---------------------------------------------------------------------------
-// Razorpay Web Checkout (Works with Expo Go)
-// ---------------------------------------------------------------------------
-
-export interface PaymentOrder {
-  order_id: string;
-  txn_ref: string;
-  amount: number;
-  key: string;
-}
-
-export async function initiateRazorpayPayment(
-  qrData: QRData,
-  userId: number,
-  amount: number
-): Promise<PaymentOrder> {
-  try {
-    const res = await fetch(`${BASE_URL}/payments/create-order`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-Id': String(userId),
-      },
-      body: JSON.stringify({
-        amount,
-        merchant_name: qrData.pn || qrData.pa,
-        merchant_upi: qrData.pa,
-      }),
-    });
-
-    const text = await res.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
-      throw new Error(`Invalid server Response: ${text.substring(0, 100)}`);
-    }
-
-    if (!res.ok) {
-      throw new Error(data.detail || `Request failed with status ${res.status}`);
-    }
-
-    return data;
-  } catch (e: any) {
-    console.error('[initiateRazorpayPayment] Error:', e.message);
-    throw e;
-  }
-}
-
-export async function openRazorpayCheckout(
-  order: PaymentOrder,
-  userId: number,
-  onSuccess?: (paymentId: string) => void,
-  onFailure?: (error: string) => void
-): Promise<string> {
-  // In test mode, simulate payment success automatically
-  // In production, this would open a real Razorpay checkout
-  console.log('Opening payment with order:', order);
-
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      try {
-        const paymentId = 'pay_' + Math.random().toString(36).substr(2, 9);
-        if (onSuccess) onSuccess(paymentId);
-        resolve(paymentId); // resolve WITH the paymentId
-      } catch (e: any) {
-        if (onFailure) onFailure(e.message);
-        reject(e);
-      }
-    }, 1500); // reduced to 1.5s
-  });
-}
-
-export async function verifyRazorpayPayment(
-  razorpay_order_id: string,
-  razorpay_payment_id: string,
-  razorpay_signature: string,
-  txn_ref: string,
-  userId: number
-): Promise<{ coins_earned: number; total_coins: number }> {
-  console.log('[VERIFY] Starting verification with:', {
-    order_id: razorpay_order_id,
-    payment_id: razorpay_payment_id,
-    txn_ref,
-    user_id: userId,
-    url: `${BASE_URL}/payments/verify-razorpay`,
-  });
-
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s — dev tunnel needs more headroom
-
-    const res = await fetch(`${BASE_URL}/payments/verify-razorpay`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-Id': String(userId),
-      },
-      body: JSON.stringify({
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        txn_ref,
-        test_mode: true,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-    console.log('[VERIFY] Response status:', res.status);
-
-    const text = await res.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
-      console.log('[VERIFY] Invalid JSON response:', text.substring(0, 100));
-      throw new Error(`Invalid server response`);
-    }
-
-    if (!res.ok) {
-      console.log('[VERIFY] Error response:', data);
-      throw new Error(data.detail || `Verification failed: ${res.status}`);
-    }
-
-    console.log('[VERIFY] Success:', data);
-    return data;
-  } catch (e: any) {
-    console.log('[VERIFY] Error:', e.message);
-    if (e.name === 'AbortError') {
-      throw new Error('Verification request timed out. Please try again.');
-    }
-    throw e;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Web QR decoder
-// ---------------------------------------------------------------------------
-
-async function decodeQRWeb(imageUri: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return resolve(null);
-      ctx.drawImage(img, 0, 0);
-
-      if ('BarcodeDetector' in window) {
-        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-        detector
-          .detect(canvas)
-          .then((codes: any[]) => resolve(codes.length > 0 ? codes[0].rawValue : null))
-          .catch(() => resolve(null));
-      } else {
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        import('jsqr')
-          .then(({ default: jsQR }) => {
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
-            resolve(code ? code.data : null);
-          })
-          .catch(() => resolve(null));
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = imageUri;
-  });
-}
-
-// ---------------------------------------------------------------------------
-// UPI QR parser
-// ---------------------------------------------------------------------------
+// ─── UPI QR parser ────────────────────────────────────────────────────────────
 
 export function parseUpiQrData(data: string): QRData | null {
   try {
@@ -249,13 +72,64 @@ export function parseUpiQrData(data: string): QRData | null {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Screen
-// ---------------------------------------------------------------------------
+// ─── Web QR decoder ───────────────────────────────────────────────────────────
+
+async function decodeQRWeb(imageUri: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(null);
+      ctx.drawImage(img, 0, 0);
+
+      if ('BarcodeDetector' in window) {
+        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+        detector
+          .detect(canvas)
+          .then((codes: any[]) => resolve(codes.length > 0 ? codes[0].rawValue : null))
+          .catch(() => resolve(null));
+      } else {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        import('jsqr')
+          .then(({ default: jsQR }) => {
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            resolve(code ? code.data : null);
+          })
+          .catch(() => resolve(null));
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = imageUri;
+  });
+}
+
+// ─── Navigate helper ──────────────────────────────────────────────────────────
+
+function navigateToConfirm(qrData: QRData) {
+  router.push({
+    pathname: '/confirm',
+    params: { data: encodeURIComponent(JSON.stringify(qrData)) },
+  });
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [pickingImage, setPickingImage] = useState(false);
+
+  // Reset scanned state every time the screen comes back into focus
+  // so the camera is always ready after returning from confirm
+  useFocusEffect(
+    useCallback(() => {
+      setScanned(false);
+    }, [])
+  );
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -263,59 +137,73 @@ export default function ScanScreen() {
     }
   }, [permission]);
 
+  // ── Camera scan ──────────────────────────────────────────────────────────────
   const handleBarCodeScanned = ({ data }: { data: string }) => {
-    if (scanned) return;
+    if (scanned || pickingImage) return;
     setScanned(true);
 
     const qrData = parseUpiQrData(data);
     if (qrData && qrData.pa) {
-      router.push({
-        pathname: '/confirm',
-        params: { data: encodeURIComponent(JSON.stringify(qrData)) },
-      });
+      navigateToConfirm(qrData);
     } else {
-      Alert.alert('Invalid QR', 'This QR code is not a valid UPI payment QR');
-      setScanned(false);
+      Alert.alert('Invalid QR', 'This QR code is not a valid UPI payment QR', [
+        { text: 'OK', onPress: () => setScanned(false) },
+      ]);
     }
   };
 
+  // ── Gallery pick ─────────────────────────────────────────────────────────────
   const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.8,
-    });
+    if (pickingImage) return;
+    setPickingImage(true);
 
-    if (!result.canceled && result.assets[0]) {
-      const imageUri = result.assets[0].uri;
-      try {
-        let rawData: string | null = null;
-
-        if (Platform.OS === 'web') {
-          rawData = await decodeQRWeb(imageUri);
-        } else {
-          const scannedCodes = await Camera.scanFromURLAsync(imageUri, ['qr']);
-          rawData = scannedCodes.length > 0 ? scannedCodes[0].data : null;
+    try {
+      // Request media library permission if needed
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Required', 'Please allow access to your photo library to pick a QR code.');
+          return;
         }
-
-        if (rawData) {
-          const qrData = parseUpiQrData(rawData);
-          if (qrData && qrData.pa) {
-            router.push({
-              pathname: '/confirm',
-              params: { data: encodeURIComponent(JSON.stringify(qrData)) },
-            });
-          } else {
-            Alert.alert('Invalid QR', 'No valid UPI QR code found in the image');
-          }
-        } else {
-          Alert.alert('Invalid QR', 'No QR code found in the image');
-        }
-      } catch (e: any) {
-        Alert.alert('Error', e.message || 'Failed to parse QR code');
       }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1, // full quality for better QR detection
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const imageUri = result.assets[0].uri;
+      let rawData: string | null = null;
+
+      if (Platform.OS === 'web') {
+        rawData = await decodeQRWeb(imageUri);
+      } else {
+        const scannedCodes = await Camera.scanFromURLAsync(imageUri, ['qr']);
+        rawData = scannedCodes.length > 0 ? scannedCodes[0].data : null;
+      }
+
+      if (!rawData) {
+        Alert.alert('No QR Found', 'Could not detect a QR code in the selected image. Try a clearer photo.');
+        return;
+      }
+
+      const qrData = parseUpiQrData(rawData);
+      if (qrData && qrData.pa) {
+        navigateToConfirm(qrData);
+      } else {
+        Alert.alert('Invalid QR', 'The QR code found is not a valid UPI payment QR.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to read QR from image.');
+    } finally {
+      setPickingImage(false);
     }
   };
+
+  // ── Permission screens ───────────────────────────────────────────────────────
 
   if (!permission) {
     return (
@@ -331,15 +219,14 @@ export default function ScanScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors.dark.background }]}>
         <View style={styles.permissionContainer}>
-          <Text style={[styles.text, { color: Colors.dark.text }]}>
-            Camera permission required
-          </Text>
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>📷</Text>
+          <Text style={[styles.text, { color: Colors.dark.text }]}>Camera access needed</Text>
           <Text style={[styles.subtext, { color: Colors.dark.icon }]}>
             We need camera access to scan QR codes
           </Text>
           <Button title="Grant Permission" onPress={requestPermission} />
           <Button
-            title="Pick from Gallery"
+            title="Pick from Gallery instead"
             onPress={handlePickImage}
             variant="outline"
             style={styles.secondaryButton}
@@ -349,6 +236,8 @@ export default function ScanScreen() {
     );
   }
 
+  // ── Main scan UI ─────────────────────────────────────────────────────────────
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors.dark.background }]}>
       <View style={styles.cameraContainer}>
@@ -356,90 +245,133 @@ export default function ScanScreen() {
           style={styles.camera}
           facing="back"
           barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={handleBarCodeScanned}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         />
-        {/* Overlay positioned absolutely above camera */}
-        <View style={styles.overlay}>
-          <View style={styles.scanArea}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
+
+        {/* Dark overlay with transparent scan window */}
+        <View style={styles.overlay} pointerEvents="none">
+          {/* top dark band */}
+          <View style={[styles.overlayBand, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+
+          {/* middle row: dark | clear window | dark */}
+          <View style={styles.overlayMiddle}>
+            <View style={[styles.overlaySide, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
+            <View style={styles.scanWindow}>
+              {/* Corner brackets */}
+              <View style={[styles.corner, styles.topLeft, { borderColor: Colors.dark.tint }]} />
+              <View style={[styles.corner, styles.topRight, { borderColor: Colors.dark.tint }]} />
+              <View style={[styles.corner, styles.bottomLeft, { borderColor: Colors.dark.tint }]} />
+              <View style={[styles.corner, styles.bottomRight, { borderColor: Colors.dark.tint }]} />
+            </View>
+            <View style={[styles.overlaySide, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
           </View>
+
+          {/* bottom dark band */}
+          <View style={[styles.overlayBand, { backgroundColor: 'rgba(0,0,0,0.55)' }]} />
         </View>
       </View>
 
-      <View style={styles.footer}>
+      {/* Footer */}
+      <View style={[styles.footer, { backgroundColor: Colors.dark.background }]}>
         <Text style={[styles.hint, { color: Colors.dark.icon }]}>
-          Position the QR code within the frame
+          Point the camera at a UPI QR code
         </Text>
+
         <View style={styles.actions}>
+          {/* Gallery button — always visible */}
           <TouchableOpacity
-            style={[styles.action, { backgroundColor: Colors.dark.card }]}
+            style={[
+              styles.galleryBtn,
+              {
+                backgroundColor: Colors.dark.card,
+                borderColor: Colors.dark.border,
+                opacity: pickingImage ? 0.5 : 1,
+              },
+            ]}
             onPress={handlePickImage}
+            disabled={pickingImage}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.actionText, { color: Colors.dark.text }]}>📷 Gallery</Text>
+            {/* <Text style={styles.galleryIcon}>🖼️</Text> */}
+            <Text style={[styles.galleryText, { color: Colors.dark.text }]}>
+              {pickingImage ? 'Opening…' : 'Upload from Gallery'}
+            </Text>
           </TouchableOpacity>
-          {scanned && (
-            <Button
-              title="Scan Again"
-              onPress={() => setScanned(false)}
-              variant="outline"
-            />
-          )}
         </View>
+
+        {/* Scan again — only shown if scanned and something went wrong */}
+        {scanned && (
+          <Button
+            title="Tap to Scan Again"
+            onPress={() => setScanned(false)}
+            variant="outline"
+            style={{ marginTop: 12 }}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
   cameraContainer: { flex: 1, position: 'relative' },
   camera: { flex: 1 },
+
   overlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    top: 0, left: 0, right: 0, bottom: 0,
+    flexDirection: 'column',
   },
-  scanArea: {
-    width: 250,
-    height: 250,
-    backgroundColor: 'transparent',
+  overlayBand: { flex: 1 },
+  overlayMiddle: { flexDirection: 'row', height: 260 },
+  overlaySide: { flex: 1 },
+  scanWindow: {
+    width: 260,
+    height: 260,
     position: 'relative',
   },
+
   corner: {
     position: 'absolute',
-    width: 30,
-    height: 30,
-    borderColor: Colors.dark.tint,
+    width: 28,
+    height: 28,
   },
-  topLeft: { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 },
-  topRight: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 },
-  bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 },
-  bottomRight: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 },
-  footer: { padding: 20, backgroundColor: Colors.dark.background },
-  hint: { fontSize: 14, textAlign: 'center', marginBottom: 20 },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  topLeft:    { top: 0,    left: 0,   borderTopWidth: 3,    borderLeftWidth: 3   },
+  topRight:   { top: 0,    right: 0,  borderTopWidth: 3,    borderRightWidth: 3  },
+  bottomLeft: { bottom: 0, left: 0,   borderBottomWidth: 3, borderLeftWidth: 3   },
+  bottomRight:{ bottom: 0, right: 0,  borderBottomWidth: 3, borderRightWidth: 3  },
+
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 90, // Increased to sit above the absolute tab bar and OS home indicator
     gap: 12,
   },
-  action: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
-  actionText: { fontSize: 16, fontWeight: '500' },
-  secondaryButton: { marginTop: 12 },
-  permissionContainer: {
+  hint: { fontSize: 14, textAlign: 'center' },
+
+  actions: { flexDirection: 'row', justifyContent: 'center' },
+  galleryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
   },
-  text: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  subtext: { fontSize: 14, textAlign: 'center', marginBottom: 24 },
+  galleryIcon: { fontSize: 20 },
+  galleryText: { fontSize: 15, fontWeight: '600' },
+
+  // Permission screen
+  permissionContainer: {
+    flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12,
+  },
+  text: { fontSize: 18, fontWeight: '600' },
+  subtext: { fontSize: 14, textAlign: 'center', marginBottom: 12 },
+  secondaryButton: { marginTop: 4 },
 });
