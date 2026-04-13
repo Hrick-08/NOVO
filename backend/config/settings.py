@@ -3,7 +3,7 @@ Configuration settings.
 """
 
 # Database
-DATABASE_URL = "sqlite:///./payscan.db"
+DATABASE_URL = "sqlite:///./NOVO.db"
 
 # Razorpay
 RAZORPAY_KEY_ID = "rzp_test_placeholder"
