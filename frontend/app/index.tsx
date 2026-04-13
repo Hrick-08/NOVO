@@ -5,13 +5,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button, Input } from '@/components';
 import { Colors } from '@/config/theme';
 import { DEEPLINK_SCHEME } from '@/config/api';
-import { register } from '@/hooks/useApi';
+import { register, login, getCurrentUser } from '@/hooks/useApi';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { setUser } = useAppStore();
@@ -25,17 +26,30 @@ export default function AuthScreen() {
       const userId = await AsyncStorage.getItem('userId');
       const userName = await AsyncStorage.getItem('userName');
       if (userId && userName) {
-        setUser({ id: parseInt(userId), name: userName, email: '' });
-        router.replace('/(tabs)');
+        // Validate user still exists in the database
+        try {
+          const fullUser = await getCurrentUser(parseInt(userId));
+          setUser({ id: fullUser.id, name: fullUser.name, email: fullUser.email, nova_coins: fullUser.nova_coins ?? 0 });
+          router.replace('/(tabs)');
+        } catch (e) {
+          // User doesn't exist in DB anymore, clear the session
+          console.log('User session expired or invalid - clearing storage');
+          await AsyncStorage.multiRemove(['userId', 'userName', 'userEmail']);
+          setUser(null);
+        }
       }
     } catch (e) {
-      console.log('No user found');
+      console.log('No user found in storage');
     }
   };
 
   const handleAuth = async () => {
     if (!email) {
       setError('Please enter your email');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
     if (!isLogin && !name) {
@@ -48,16 +62,33 @@ export default function AuthScreen() {
 
     try {
       console.log('Starting auth with email:', email);
-      const user = await register(isLogin ? 'User' : name, email);
+      let user: any;
+      
+      if (isLogin) {
+        // Login flow
+        user = await login(email, password);
+      } else {
+        // Register flow
+        user = await register(name, email, password);
+      }
+      
       console.log('Got user:', user);
       const userId = user.user_id ?? user.id;
       await AsyncStorage.setItem('userId', userId.toString());
       await AsyncStorage.setItem('userName', user.name);
-      setUser({ id: userId, name: user.name, email });
+      await AsyncStorage.setItem('userEmail', email);
+      
+      // Fetch full profile to get nova_coins
+      try {
+        const fullUser = await getCurrentUser(userId);
+        setUser({ id: fullUser.id, name: fullUser.name, email: fullUser.email, nova_coins: fullUser.nova_coins ?? 0 });
+      } catch {
+        setUser({ id: userId, name: user.name, email: email, nova_coins: 0 });
+      }
       router.replace('/(tabs)');
     } catch (e: any) {
       console.error('Auth error:', e);
-      setError('Cannot connect to server. Make sure backend is running.');
+      setError(e.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -94,6 +125,14 @@ export default function AuthScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry={true}
+              autoCapitalize="none"
+            />
             {error ? <Text style={styles.error}>{error}</Text> : null}
           </View>
 
@@ -109,7 +148,13 @@ export default function AuthScreen() {
             </Text>
             <Button
               title={isLogin ? 'Sign Up' : 'Sign In'}
-              onPress={() => { setIsLogin(!isLogin); setError(''); }}
+              onPress={() => { 
+                setIsLogin(!isLogin);
+                setError('');
+                setPassword('');
+                setEmail('');
+                setName('');
+              }}
               variant="outline"
               style={styles.toggleButton}
             />

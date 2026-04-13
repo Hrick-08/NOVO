@@ -1,4 +1,4 @@
-export const BASE_URL = 'http://10.100.190.174:8000';
+export const BASE_URL = 'http://100.71.204.110:8000';
 
 export const UPI_APPS = [
   { name: 'GPay', scheme: 'gpay://upi/pay?', icon: 'google' },

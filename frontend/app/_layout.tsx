@@ -31,8 +31,14 @@ export default function RootLayout() {
         <Stack.Screen
           name="confirm"
           options={{
-            presentation: 'modal',
             headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="success"
+          options={{
+            headerShown: false,
+            gestureEnabled: false, // prevent swipe-back after payment
           }}
         />
         <Stack.Screen
