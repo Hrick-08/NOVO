@@ -123,7 +123,7 @@ export default function AuthScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboard}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>PayScan</Text>
+            <Text style={[styles.title, { color: colors.text }]}>NOVO</Text>
             <Text style={[styles.subtitle, { color: colors.icon }]}>
               {isLogin ? 'Welcome back!' : 'Create your account'}
             </Text>

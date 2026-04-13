@@ -76,7 +76,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
-          headerTitle: 'PayScan',
+          headerTitle: 'NOVO',
           headerRight: () => <HeaderRight />,
         }}
       />
