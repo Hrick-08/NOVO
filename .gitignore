@@ -44,16 +44,21 @@ frontend/ios
 frontend/android
 
 
-backend/__pycache__/
-backend/*.pyc
-backend/.env
-backend/env
-backend/.venv/
-backend/payscan.db
-backend/payscan.db-journal
-backend/payscan.db-shm
-backend/payscan.db-wal
-backend/NOVO.db
-backend/NOVO.db-journal
-backend/NOVO.db-shm
-backend/NOVO.db-wal
+# Ignore all __pycache__ folders everywhere
+__pycache__/
+
+# Ignore Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.env
+env/
+.venv/
+
+# Databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
