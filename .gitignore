@@ -45,6 +45,7 @@ frontend/ios
 frontend/android
 
 
+<<<<<<< Updated upstream
 # Ignore all __pycache__ folders everywhere
 __pycache__/
 
@@ -63,3 +64,13 @@ env/
 *.db-journal
 *.db-shm
 *.db-wal
+=======
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/.venv/
+backend/payscan.db
+
+
+.chroma/
+>>>>>>> Stashed changes
