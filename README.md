@@ -43,7 +43,17 @@ Novo is a financial super app built for Gen-Z India. It combines UPI payments, a
 - **Coin Store** — redeem coins for Novo merch, Amazon & Flipkart gift cards
 - **Purchase History** — track all transactions and redemptions
 - **Streak Multiplier System** — unlock 1.5x and 2x coin multipliers based on transaction frequency
-- **Coming Soon** — AI investing agent, portfolio builder, community events, financial personality quiz
+- **AI investing agent** — Portfolio builder, Risk Simulation Engine, Loss Probability Meter, Market Pulse
+
+---
+
+### AI Investing System
+
+- **AI Investing Agent** — conversational assistant that explains investments in simple language  
+- **Portfolio Builder** — generates personalized portfolios based on risk profile and goals  
+- **Risk Simulation Engine** — Monte Carlo–based projections showing outcomes in ₹ terms  
+- **Loss Probability Meter** — displays probability of losing money over a time horizon  
+- **Market Pulse** — real-time market insights and trends
 
 ---
 
@@ -54,7 +64,8 @@ Novo is a financial super app built for Gen-Z India. It combines UPI payments, a
 | Frontend | React Native (Expo) · TypeScript · React Navigation |
 | Backend | FastAPI · SQLAlchemy · SQLite |
 | Payments | Razorpay SDK |
-| AI Agent | Coming soon — to be integrated later |
+| AI / ML | LLM-based agent (Groq) · NumPy (Monte Carlo simulation) |
+| Data | yfinance (market data) | Tavily (market news)
 | State | Zustand · AsyncStorage |
 | Auth | Email/password (pbkdf2_sha256) + stateless header-based sessions |
 
@@ -85,7 +96,8 @@ NOVO/
     │   │   ├── history.tsx # Payment transaction history
     │   │   ├── rewards.tsx # Coin redeem history + streak display
     │   │   ├── collections.tsx # Coin store (merch, coupons)
-    │   │   ├── invest.tsx  # Market preview (coming soon)
+    │   │   ├── invest.tsx  # Market preview
+    │   │   ├── portfolio.tsx  # AI-Generated portfolio
     │   │   └── profile.tsx # User profile + account settings
     │   ├── confirm.tsx     # Payment confirmation + Razorpay checkout
     │   ├── status.tsx      # Payment status check
@@ -191,6 +203,9 @@ npx expo start
 ```env
 RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
 RAZORPAY_KEY_SECRET=your_secret_here
+
+GROQ_API_KEY=your_groq_api_key_here
+TAVILY_API_KEY=your_tavily_api_key_here
 ```
 
 **Frontend** — Create `frontend/.env`:
@@ -271,7 +286,18 @@ Full interactive docs available at `http://localhost:8000/docs`
 | `GET` | `/purchase/history` | Full purchase history |
 | `GET` | `/purchase/{purchase_id}` | Get a specific purchase |
 
+### 📈 Investing & AI
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/portfolio/build` | Generate AI-based portfolio from user profile and amount |
+| `GET` | `/market-pulse` | Get real-time market snapshot (indices, stocks, trends) |
+| `GET` | `/stock/price` | Fetch live price data for a given ticker |
+| `POST` | `/agent/chat` | Conversational AI investing assistant |
+| `POST` | `/simulate` | Run Monte Carlo simulation for investment scenarios |
+
 ---
+
 
 ## Nova Coins System
 
@@ -320,8 +346,6 @@ Scan QR → confirm.tsx
 
 - [ ] Squad investing — group micro-investment pools
 - [ ] Weekly events engine — challenges, leaderboards, coin betting
-- [ ] AI investing agent — conversational portfolio guidance
-- [ ] Portfolio builder — RAG-powered personalized allocation
 - [ ] Money Roast — weekly AI spending summary card
 - [ ] Local partner coin network — campus and small business redemptions
 - [ ] Carbon finance score — eco-bonus coins for sustainable spending
