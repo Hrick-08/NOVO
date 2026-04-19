@@ -5,6 +5,7 @@ FastAPI Payment Application with modular structure.
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
@@ -63,6 +64,12 @@ app.include_router(collections_router)
 app.include_router(purchases_router)
 app.include_router(community_router)
 # app.include_router(qr_router)
+
+# Serve static files
+static_path = os.path.join(os.path.dirname(__file__), 'static')
+if os.path.exists(static_path):
+    app.mount('/static', StaticFiles(directory=static_path), name='static')
+
 def get_db():
     db = SessionLocal()
     try:

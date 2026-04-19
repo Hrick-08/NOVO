@@ -8,55 +8,75 @@ from models import (
     MerchItem, AmazonCoupon, FlipkartCoupon, Event, Badge, 
     EventParticipant, User
 )
+from routers import pwd_context
 
 
 def seed_demo_data(db: Session):
     """Seed database with demo data on startup."""
-    # Seed merch items
-    if db.query(MerchItem).count() == 0:
-        demo_merch = [
-            MerchItem(
-                name="Nova T-Shirt",
-                description="Premium cotton tee with the Nova logo. Available in S/M/L/XL.",
-                image_url="https://placehold.co/400x400?text=Nova+Tshirt",
-                coin_price=500,
-                stock=100,
-                category="apparel",
+    # Seed test users first (needed for events and leaderboard)
+    if db.query(User).count() == 0:
+        test_users = [
+            User(
+                name="Hrick",
+                email="hrick@gmail.com",
+                password_hash=pwd_context.hash("password123"),
+                nova_coins=5000,
             ),
-            MerchItem(
-                name="Nova Cap",
-                description="Embroidered snapback cap in black.",
-                image_url="https://placehold.co/400x400?text=Nova+Cap",
-                coin_price=300,
-                stock=50,
-                category="accessories",
-            ),
-            MerchItem(
-                name="Nova Tote Bag",
-                description="Eco-friendly canvas tote with Nova branding.",
-                image_url="https://placehold.co/400x400?text=Nova+Tote",
-                coin_price=200,
-                stock=75,
-                category="accessories",
-            ),
-            MerchItem(
-                name="Nova Hoodie",
-                description="Unisex fleece hoodie — stay cozy and branded.",
-                image_url="https://placehold.co/400x400?text=Nova+Hoodie",
-                coin_price=800,
-                stock=30,
-                category="apparel",
-            ),
-            MerchItem(
-                name="Nova Sticker Pack",
-                description="Set of 10 high-quality vinyl stickers.",
-                image_url="https://placehold.co/400x400?text=Nova+Stickers",
-                coin_price=50,
-                stock=-1,   # unlimited
-                category="accessories",
+            User(
+                name="test",
+                email="test@gmail.com",
+                password_hash=pwd_context.hash("1234"),
+                nova_coins=5000,
             ),
         ]
-        db.add_all(demo_merch)
+        db.add_all(test_users)
+        db.commit()
+    
+    # Clear and reseed merch items to ensure correct image URLs
+    db.query(MerchItem).delete()
+    demo_merch = [
+        MerchItem(
+            name="Novo T-Shirt",
+            description="Premium cotton tee with the Nova logo. Available in S/M/L/XL.",
+            image_url="/static/images/merch/NOVO-tshirt.png",
+            coin_price=500,
+            stock=100,
+            category="apparel",
+        ),
+        MerchItem(
+            name="Novo Cap",
+            description="Embroidered snapback cap in black.",
+            image_url="/static/images/merch/NOVO-cap.png",
+            coin_price=300,
+            stock=50,
+            category="accessories",
+        ),
+        MerchItem(
+            name="Novo Tote Bag",
+            description="Eco-friendly canvas tote with Novo branding.",
+            image_url="/static/images/merch/NOVO-tote_bag.png",
+            coin_price=200,
+            stock=75,
+            category="accessories",
+        ),
+        MerchItem(
+            name="Novo Hoodie",
+            description="Unisex fleece hoodie — stay cozy and branded.",
+            image_url="/static/images/merch/NOVO-hoodie.png",
+            coin_price=800,
+            stock=30,
+            category="apparel",
+        ),
+        MerchItem(
+            name="Novo Sticker Pack",
+            description="Set of 10 high-quality vinyl stickers.",
+            image_url="/static/images/merch/NOVO-sticker_pack.png",
+            coin_price=50,
+            stock=-1,   # unlimited
+            category="accessories",
+        ),
+    ]
+    db.add_all(demo_merch)
 
     # Seed Amazon coupons
     if db.query(AmazonCoupon).count() == 0:
@@ -64,7 +84,7 @@ def seed_demo_data(db: Session):
             AmazonCoupon(
                 title="₹100 Amazon Gift Card",
                 description="Redeemable on Amazon.in for any product.",
-                image_url="https://placehold.co/400x400?text=Amazon+100",
+                image_url="/static/images/vouchers/amazon.jpeg",
                 coin_price=150,
                 face_value=100.0,
                 stock=200,
@@ -73,7 +93,7 @@ def seed_demo_data(db: Session):
             AmazonCoupon(
                 title="₹250 Amazon Gift Card",
                 description="Redeemable on Amazon.in for any product.",
-                image_url="https://placehold.co/400x400?text=Amazon+250",
+                image_url="/static/images/vouchers/amazon.jpeg",
                 coin_price=350,
                 face_value=250.0,
                 stock=100,
@@ -82,7 +102,7 @@ def seed_demo_data(db: Session):
             AmazonCoupon(
                 title="₹500 Amazon Gift Card",
                 description="Great for shopping electronics, books, and more.",
-                image_url="https://placehold.co/400x400?text=Amazon+500",
+                image_url="/static/images/vouchers/amazon.jpeg",
                 coin_price=650,
                 face_value=500.0,
                 stock=50,
@@ -91,7 +111,7 @@ def seed_demo_data(db: Session):
             AmazonCoupon(
                 title="₹1000 Amazon Gift Card",
                 description="Maximum value gift card for big purchases.",
-                image_url="https://placehold.co/400x400?text=Amazon+1000",
+                image_url="/static/images/vouchers/amazon.jpeg",
                 coin_price=1200,
                 face_value=1000.0,
                 stock=20,
@@ -106,7 +126,7 @@ def seed_demo_data(db: Session):
             FlipkartCoupon(
                 title="₹100 Flipkart Gift Card",
                 description="Redeemable on Flipkart for any category.",
-                image_url="https://placehold.co/400x400?text=Flipkart+100",
+                image_url="/static/images/vouchers/flipkart.webp",
                 coin_price=140,
                 face_value=100.0,
                 stock=200,
@@ -115,7 +135,7 @@ def seed_demo_data(db: Session):
             FlipkartCoupon(
                 title="₹250 Flipkart Gift Card",
                 description="Shop fashion, electronics, and more.",
-                image_url="https://placehold.co/400x400?text=Flipkart+250",
+                image_url="/static/images/vouchers/flipkart.webp",
                 coin_price=330,
                 face_value=250.0,
                 stock=100,
@@ -124,20 +144,11 @@ def seed_demo_data(db: Session):
             FlipkartCoupon(
                 title="₹500 Flipkart Gift Card",
                 description="Perfect for your next big Flipkart order.",
-                image_url="https://placehold.co/400x400?text=Flipkart+500",
+                image_url="/static/images/vouchers/flipkart.webp",
                 coin_price=620,
                 face_value=500.0,
                 stock=50,
                 expires_at=datetime(2025, 12, 31),
-            ),
-            FlipkartCoupon(
-                title="Flipkart Plus 10% Off Coupon",
-                description="Flat 10% off on your next Flipkart purchase (max ₹200 off).",
-                image_url="https://placehold.co/400x400?text=FK+10pct",
-                coin_price=100,
-                face_value=200.0,
-                stock=500,
-                expires_at=datetime(2025, 9, 30),
             ),
         ]
         db.add_all(demo_flipkart)
