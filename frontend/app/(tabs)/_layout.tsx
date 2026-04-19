@@ -117,6 +117,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="portfolio"
+        options={{
+          title: 'Portfolio',
+          headerTitle: 'Portfolio',
+          headerRight: () => <HeaderRight />,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
+        name="createportfolio"
+        options={{
+          title: 'Create Portfolio',
+          headerTitle: 'Create Portfolio',
+          headerRight: () => <HeaderRight />,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
+      <Tabs.Screen
         name="collections"
         options={{
           title: 'Shop',
