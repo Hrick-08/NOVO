@@ -6,6 +6,7 @@ from .collections import router as collections_router
 from .purchases import router as purchases_router
 from .qr import router as qr_router
 from .test import router as test_router
+from .community import router as community_router
 
 __all__ = [
     "auth_router",
@@ -15,4 +16,5 @@ __all__ = [
     "purchases_router",
     "qr_router",
     "test_router",
+    "community_router",
 ]

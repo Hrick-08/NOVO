@@ -108,24 +108,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="portfolio"
-        options={{
-          title: 'Portfolio',
-          headerTitle: 'Portfolio',
-          headerRight: () => <HeaderRight />,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-      <Tabs.Screen
-        name="createportfolio"
-        options={{
-          title: 'Create Portfolio',
-          headerTitle: 'Create Portfolio',
-          headerRight: () => <HeaderRight />,
-          tabBarItemStyle: { display: 'none' },
-        }}
-      />
-      <Tabs.Screen
         name="collections"
         options={{
           title: 'Shop',
@@ -188,6 +170,22 @@ function TabIcon({ name, color }: { name: string; color: string }) {
           stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
         <Polyline points="16 7 22 7 22 13"
           stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    ),
+    community: (c) => (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx={9} cy={7} r={4} stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M16 3.13a4 4 0 0 1 0 7.75" stroke={c} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    ),
+    squads: (c) => (
+      <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+        <Circle cx={9} cy={7} r={3} stroke={c} strokeWidth={2} />
+        <Circle cx={15} cy={7} r={3} stroke={c} strokeWidth={2} />
+        <Circle cx={12} cy={16} r={3} stroke={c} strokeWidth={2} />
+        <Path d="M6 10h6M12 10h6M9 20h6" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
       </Svg>
     ),
     collections: (c) => (

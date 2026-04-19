@@ -2,9 +2,12 @@
 Database seeding with demo data.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from models import MerchItem, AmazonCoupon, FlipkartCoupon
+from models import (
+    MerchItem, AmazonCoupon, FlipkartCoupon, Event, Badge, 
+    EventParticipant, User
+)
 
 
 def seed_demo_data(db: Session):
@@ -139,4 +142,115 @@ def seed_demo_data(db: Session):
         ]
         db.add_all(demo_flipkart)
 
-    db.commit()
+    # Seed badges
+    if db.query(Badge).count() == 0:
+        demo_badges = [
+            Badge(
+                name="First Event Hero",
+                description="Joined your first community event",
+                image_url="https://placehold.co/100x100?text=Hero+Badge",
+            ),
+            Badge(
+                name="Quiz Master",
+                description="Won a financial quiz challenge",
+                image_url="https://placehold.co/100x100?text=Quiz+Badge",
+            ),
+            Badge(
+                name="Saving Champion",
+                description="Completed a saving challenge",
+                image_url="https://placehold.co/100x100?text=Save+Badge",
+            ),
+            Badge(
+                name="Leaderboard Topper",
+                description="Ranked #1 in weekly leaderboard",
+                image_url="https://placehold.co/100x100?text=Top+Badge",
+            ),
+            Badge(
+                name="Squad Captain",
+                description="Created and led a squad",
+                image_url="https://placehold.co/100x100?text=Captain+Badge",
+            ),
+        ]
+        db.add_all(demo_badges)
+        db.commit()
+
+    # Seed events
+    if db.query(Event).count() == 0:
+        now = datetime.utcnow()
+        next_sunday = now + timedelta(days=(6 - now.weekday()))
+        
+        demo_events = [
+            Event(
+                title="Save ₹500 This Week",
+                description="Save at least ₹500 this week and earn 100 Nova Coins. Complete by Sunday!",
+                event_type="saving",
+                coins_reward=100,
+                target_amount=500.0,
+                category_color="blue",
+                starts_at=now,
+                ends_at=next_sunday,
+                is_active=True,
+            ),
+            Event(
+                title="Financial IQ Quiz",
+                description="Answer 5 questions about personal finance and investing. Get 3+ right to win!",
+                event_type="quiz",
+                coins_reward=100,
+                target_amount=None,
+                category_color="purple",
+                starts_at=now,
+                ends_at=next_sunday,
+                is_active=True,
+            ),
+            Event(
+                title="10,000 Steps Marathon",
+                description="Walk or run 10,000 steps this week. Earn coins for staying active!",
+                event_type="marathon",
+                coins_reward=80,
+                target_amount=None,
+                category_color="green",
+                starts_at=now,
+                ends_at=next_sunday,
+                is_active=True,
+            ),
+            Event(
+                title="Stock Prediction Bet",
+                description="Bet coins: which stock will rise more this week — HDFC or INFY? Winners split the pool!",
+                event_type="prediction",
+                coins_reward=200,
+                target_amount=None,
+                category_color="orange",
+                starts_at=now,
+                ends_at=next_sunday,
+                is_active=True,
+            ),
+        ]
+        db.add_all(demo_events)
+        db.commit()
+        
+        # Add some mock participants to make leaderboard look active
+        events = db.query(Event).all()
+        test_users = db.query(User).limit(5).all()
+        
+        for event in events:
+            for i, user in enumerate(test_users[:3], 1):
+                # Check if participant already exists
+                existing = db.query(EventParticipant).filter(
+                    EventParticipant.event_id == event.id,
+                    EventParticipant.user_id == user.id
+                ).first()
+                
+                if not existing:
+                    participant = EventParticipant(
+                        event_id=event.id,
+                        user_id=user.id,
+                        score=float(100 - (i * 20)),
+                        coins_earned=event.coins_reward - (i * 20),
+                        is_completed=True,
+                        joined_at=now - timedelta(days=1),
+                        completed_at=now,
+                    )
+                    db.add(participant)
+        
+        db.commit()
+

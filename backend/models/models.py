@@ -102,3 +102,77 @@ class Purchase(Base):
     delivery_address = Column(Text, nullable=True)
     coupon_code_issued = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Event(Base):
+    """Community event model."""
+    __tablename__ = "events"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    event_type = Column(String, nullable=False)  # "saving" | "quiz" | "marathon" | "prediction"
+    coins_reward = Column(Integer, default=100)  # Base reward for completion
+    target_amount = Column(Float, nullable=True)  # For saving challenges
+    category_color = Column(String, nullable=True)  # For UI: blue, purple, green, orange
+    starts_at = Column(DateTime, nullable=False)
+    ends_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class EventParticipant(Base):
+    """Tracks user participation in events."""
+    __tablename__ = "event_participants"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    score = Column(Float, default=0.0)  # Points scored in this event
+    is_completed = Column(Boolean, default=False)
+    coins_earned = Column(Integer, default=0)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class Squad(Base):
+    """Squad/group model for social features."""
+    __tablename__ = "squads"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    max_members = Column(Integer, default=10)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SquadMember(Base):
+    """Squad membership model."""
+    __tablename__ = "squad_members"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    squad_id = Column(Integer, ForeignKey("squads.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Badge(Base):
+    """Achievement badges."""
+    __tablename__ = "badges"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    image_url = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UserBadge(Base):
+    """User badge awards."""
+    __tablename__ = "user_badges"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    badge_id = Column(Integer, ForeignKey("badges.id"), nullable=False)
+    earned_at = Column(DateTime, default=datetime.utcnow)

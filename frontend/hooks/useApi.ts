@@ -87,6 +87,68 @@ export interface PurchaseResult {
   status: string; created_at: string; coupon_code?: string;
 }
 
+// ─── Community types ──────────────────────────────────────────────────────────
+
+export interface Event {
+  id: number;
+  title: string;
+  description?: string;
+  event_type: 'saving' | 'quiz' | 'marathon' | 'prediction';
+  coins_reward: number;
+  target_amount?: number;
+  category_color?: string;
+  starts_at: string;
+  ends_at: string;
+  is_active: boolean;
+  participant_count: number;
+  user_joined: boolean;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: number;
+  user_name: string;
+  user_avatar?: string;
+  coins: number;
+  score: number;
+  rank_change?: number;
+}
+
+export interface EventLeaderboard {
+  event_id: number;
+  event_title: string;
+  entries: LeaderboardEntry[];
+}
+
+export interface WeeklyLeaderboard {
+  week_ending: string;
+  entries: LeaderboardEntry[];
+}
+
+export interface MonthlyLeaderboard {
+  month: string;
+  entries: LeaderboardEntry[];
+}
+
+export interface Squad {
+  id: number;
+  name: string;
+  description?: string;
+  owner_id: number;
+  owner_name: string;
+  member_count: number;
+  max_members: number;
+  created_at: string;
+}
+
+export interface Badge {
+  id: number;
+  name: string;
+  description?: string;
+  image_url?: string;
+  earned_at?: string;
+}
+
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
 const REQUEST_TIMEOUT = 10_000;
@@ -373,4 +435,124 @@ export async function purchaseItem(userId: number, request: PurchaseRequest): Pr
   ]);
 
   return data;
+}
+
+// ─── Community ────────────────────────────────────────────────────────────────
+
+export async function getEvents(userId: number, forceRefresh = false): Promise<Event[]> {
+  const key = 'events';
+  if (!forceRefresh) {
+    const cached = await cacheGet<Event[]>(key, TTL.REWARDS);
+    if (cached) return cached;
+  }
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/events`, {
+    method: 'GET',
+    headers: await getHeaders(userId),
+  });
+  const data = await handleResponse<Event[]>(res);
+  await cacheSet(key, data);
+  return data;
+}
+
+export async function joinEvent(userId: number, eventId: number): Promise<{ success: boolean; message: string; coins_earned: number }> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/events/${eventId}/join`, {
+    method: 'POST',
+    headers: await getHeaders(userId),
+    body: JSON.stringify({}),
+  });
+  const data = await handleResponse<{ success: boolean; message: string; coins_earned: number }>(res);
+  
+  // Bust cache — coins changed
+  await Promise.all([
+    cacheDelete(CacheKey.user(userId)),
+    cacheDelete(CacheKey.profile(userId)),
+    cacheDelete('events'),
+  ]);
+  
+  return data;
+}
+
+export async function getEventLeaderboard(userId: number, eventId: number): Promise<EventLeaderboard> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/events/${eventId}/leaderboard`, {
+    method: 'GET',
+    headers: await getHeaders(userId),
+  });
+  return handleResponse<EventLeaderboard>(res);
+}
+
+export async function getWeeklyLeaderboard(userId: number): Promise<WeeklyLeaderboard> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/leaderboard/weekly`, {
+    method: 'GET',
+    headers: await getHeaders(userId),
+  });
+  return handleResponse<WeeklyLeaderboard>(res);
+}
+
+export async function getMonthlyLeaderboard(userId: number): Promise<MonthlyLeaderboard> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/leaderboard/monthly`, {
+    method: 'GET',
+    headers: await getHeaders(userId),
+  });
+  return handleResponse<MonthlyLeaderboard>(res);
+}
+
+export async function createSquad(userId: number, name: string, description?: string): Promise<Squad> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/squads`, {
+    method: 'POST',
+    headers: await getHeaders(userId),
+    body: JSON.stringify({ name, description }),
+  });
+  const data = await handleResponse<Squad>(res);
+  
+  // Bust cache — coins changed (squad creation bonus)
+  await Promise.all([
+    cacheDelete(CacheKey.user(userId)),
+    cacheDelete(CacheKey.profile(userId)),
+  ]);
+  
+  return data;
+}
+
+export async function getSquad(userId: number, squadId: number): Promise<Squad> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/squads/${squadId}`, {
+    method: 'GET',
+    headers: await getHeaders(userId),
+  });
+  return handleResponse<Squad>(res);
+}
+
+export async function inviteToSquad(userId: number, squadId: number, targetUserId: number): Promise<{ success: boolean; message: string }> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/squads/${squadId}/invite`, {
+    method: 'POST',
+    headers: await getHeaders(userId),
+    body: JSON.stringify({ user_id: targetUserId }),
+  });
+  return handleResponse<{ success: boolean; message: string }>(res);
+}
+
+export async function leaveSquad(userId: number, squadId: number): Promise<{ success: boolean; message: string }> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/squads/${squadId}/leave`, {
+    method: 'POST',
+    headers: await getHeaders(userId),
+  });
+  return handleResponse<{ success: boolean; message: string }>(res);
+}
+
+export async function getBadges(): Promise<Badge[]> {
+  const key = 'badges';
+  const cached = await cacheGet<Badge[]>(key, TTL.REWARDS);
+  if (cached) return cached;
+  
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/badges`, { method: 'GET' });
+  const data = await handleResponse<Badge[]>(res);
+  await cacheSet(key, data);
+  return data;
+}
+
+export async function getUserBadges(userId: number): Promise<Badge[]> {
+  const res = await fetchWithTimeout(`${BASE_URL}/api/community/user/badges`, {
+    method: 'GET',
+    headers: await getHeaders(userId),
+  });
+  return handleResponse<Badge[]>(res);
 }

@@ -23,6 +23,7 @@ from routers import (
     purchases_router,
     qr_router,
 )
+from routers.community import router as community_router
 from routers.test import router as test_router
 from agent import InvestingAgent
 import yfinance as yf
@@ -60,6 +61,7 @@ app.include_router(profile_router)
 app.include_router(payments_router)
 app.include_router(collections_router)
 app.include_router(purchases_router)
+app.include_router(community_router)
 # app.include_router(qr_router)
 def get_db():
     db = SessionLocal()

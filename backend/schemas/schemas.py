@@ -228,3 +228,106 @@ class QRParseResponse(BaseModel):
     pn: str
     am: str
     tn: str
+
+
+# ============================================================================
+# Community Schemas
+# ============================================================================
+
+class EventResponse(BaseModel):
+    """Event response."""
+    id: int
+    title: str
+    description: Optional[str]
+    event_type: str  # "saving" | "quiz" | "marathon" | "prediction"
+    coins_reward: int
+    target_amount: Optional[float]
+    category_color: Optional[str]
+    starts_at: str
+    ends_at: str
+    is_active: bool
+    participant_count: int = 0
+    user_joined: bool = False
+
+
+class EventDetailResponse(EventResponse):
+    """Detailed event response."""
+    created_at: str
+
+
+class LeaderboardEntryResponse(BaseModel):
+    """Leaderboard entry."""
+    rank: int
+    user_id: int
+    user_name: str
+    user_avatar: Optional[str]
+    coins: int
+    score: float
+    rank_change: Optional[int] = 0  # ↑ or ↓ indicator
+
+
+class EventLeaderboardResponse(BaseModel):
+    """Event leaderboard response."""
+    event_id: int
+    event_title: str
+    entries: List[LeaderboardEntryResponse]
+
+
+class WeeklyLeaderboardResponse(BaseModel):
+    """Weekly global leaderboard."""
+    week_ending: str
+    entries: List[LeaderboardEntryResponse]
+
+
+class MonthlyLeaderboardResponse(BaseModel):
+    """Monthly global leaderboard."""
+    month: str
+    entries: List[LeaderboardEntryResponse]
+
+
+class JoinEventRequest(BaseModel):
+    """Join event request."""
+    pass
+
+
+class JoinEventResponse(BaseModel):
+    """Join event response."""
+    success: bool
+    message: str
+    coins_earned: int = 0
+
+
+class SquadResponse(BaseModel):
+    """Squad response."""
+    id: int
+    name: str
+    description: Optional[str]
+    owner_id: int
+    owner_name: str
+    member_count: int
+    max_members: int
+    created_at: str
+
+
+class CreateSquadRequest(BaseModel):
+    """Create squad request."""
+    name: str
+    description: Optional[str] = None
+
+
+class InviteSquadRequest(BaseModel):
+    """Invite user to squad."""
+    user_id: int
+
+
+class BadgeResponse(BaseModel):
+    """Badge response."""
+    id: int
+    name: str
+    description: Optional[str]
+    image_url: Optional[str]
+
+
+class UserBadgeResponse(BadgeResponse):
+    """User badge with earned date."""
+    earned_at: str
