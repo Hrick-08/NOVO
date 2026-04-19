@@ -53,11 +53,11 @@ const EventCardComponent: React.FC<EventCardProps> = ({ event, onJoin, onViewLea
         
         <View style={{ flexDirection: 'row', gap: 6 }}>
           {event.user_joined ? (
-            <TouchableOpacity style={[styles.button, { backgroundColor: borderColor, flex: 1 }]} onPress={onViewLeaderboard}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: borderColor }]} onPress={onViewLeaderboard}>
               <Text style={styles.buttonText}>Leaderboard</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={[styles.button, { backgroundColor: borderColor, flex: 1 }]} onPress={onJoin}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: borderColor }]} onPress={onJoin}>
               <Text style={styles.buttonText}>Join</Text>
             </TouchableOpacity>
           )}
@@ -157,15 +157,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   button: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   badge: {

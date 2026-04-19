@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   backButton: {
     flexDirection: 'row',
