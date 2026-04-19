@@ -108,6 +108,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="community"
+        options={{
+          title: 'Community',
+          tabBarIcon: ({ color }) => <TabIcon name="community" color={color} />,
+          headerTitle: 'Community',
+          headerRight: () => <HeaderRight />,
+        }}
+      />
+      <Tabs.Screen
         name="collections"
         options={{
           title: 'Shop',
