@@ -8,9 +8,10 @@ import {
 } from 'react-native';
 import Svg, { Circle, Path, G, Text as SvgText } from 'react-native-svg';
 import { Colors } from '@/config/theme';
+import { BASE_URL } from '@/config/api';  // add this import
 
 
-const API = 'http://localhost:8000'; 
+// const API = 'http://localhost:8000'; 
 const SESSION_ID = 'user_session_1'; 
 
 const colors = Colors.dark;
@@ -289,11 +290,18 @@ export default function InvestScreen() {
       // All answered — score on backend
       setLoading(true);
       try {
-        const res  = await fetch(`${API}/quiz/score`, {
+        const res  = await fetch(`${BASE_URL}/quiz/score`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
           body:    JSON.stringify({ answers: updated }),
         });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`API Error: ${errText}`);
+        }
         const data = await res.json();
         setProfile(data);
         setScreen('amount');
@@ -311,9 +319,12 @@ export default function InvestScreen() {
     if (!amount || isNaN(Number(amount))) return;
     setScreen('building');
     try {
-      const res  = await fetch(`${API}/portfolio/build`, {
+      const res  = await fetch(`${BASE_URL}/portfolio/build`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify({
           profile_name: profile.profile,
           total_score:  profile.total_score,
@@ -322,6 +333,10 @@ export default function InvestScreen() {
           session_id:   SESSION_ID,
         }),
       });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API Error: ${errText}`);
+      }
       const data = await res.json();
       setPortfolio(data);
 
@@ -346,11 +361,18 @@ export default function InvestScreen() {
     setAgentBusy(true);
 
     try {
-      const res  = await fetch(`${API}/agent/chat`, {
+      const res  = await fetch(`${BASE_URL}/agent/chat`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body:    JSON.stringify({ session_id: SESSION_ID, message: userMsg }),
       });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`API Error: ${errText}`);
+      }
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'agent', text: data.reply }]);
     } catch (e) {

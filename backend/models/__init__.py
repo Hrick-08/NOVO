@@ -6,6 +6,7 @@ from .models import (
     AmazonCoupon,
     FlipkartCoupon,
     Purchase,
+    WithdrawLog
 )
 
 __all__ = [

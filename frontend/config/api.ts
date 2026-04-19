@@ -1,8 +1,5 @@
-// Use environment variable for BASE_URL (must be prefixed with EXPO_PUBLIC_ in .env)
-export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:8000';
-
-// export const BASE_URL = 'http://10.100.190.174:8000';
-// export const BASE_URL = 'http://localhost:8000';
+export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL ?? 'https://tilt-passcode-hash.ngrok-free.dev';
+console.log('[API] Base URL configured as:', BASE_URL);
 
 export const UPI_APPS = [
   { name: 'GPay', scheme: 'gpay://upi/pay?', icon: 'google' },

@@ -87,6 +87,20 @@ export interface PurchaseResult {
   status: string; created_at: string; coupon_code?: string;
 }
 
+// ─── Withdraw types ───────────────────────────────────────────────────────────
+
+export interface WithdrawRequest {
+  to_address: string;   // recipient public wallet address
+  amount:     number;   // human-readable token amount (e.g. 10.5)
+}
+
+export interface WithdrawResult {
+  tx_hash:      string;
+  from_address: string;
+  to_address:   string;
+  amount:       number;
+}
+
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
 
 const REQUEST_TIMEOUT = 10_000;
@@ -96,19 +110,27 @@ async function fetchWithTimeout(
 ): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
+
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(id);
     return res;
   } catch (e: any) {
     clearTimeout(id);
-    if (e.name === 'AbortError') throw new Error('Request timed out — check your network or dev tunnel.');
+    if (e.name === 'AbortError') {
+      console.warn(`[API] Timeout: ${options.method || 'GET'} ${url}`);
+      throw new Error('Request timed out — check your network or dev tunnel.');
+    }
+    console.error(`[API] Network Error: ${options.method || 'GET'} ${url}`, e.message);
     throw e;
   }
 }
 
 async function getHeaders(userId?: number): Promise<HeadersInit> {
-  const h: HeadersInit = { 'Content-Type': 'application/json' };
+  const h: HeadersInit = {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  };
   if (userId) (h as Record<string, string>)['X-User-Id'] = String(userId);
   return h;
 }
@@ -126,7 +148,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function register(name: string, email: string, password?: string): Promise<User> {
   const res = await fetchWithTimeout(`${BASE_URL}/auth/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await getHeaders(),
     body: JSON.stringify({ name, email, password }),
   });
   return handleResponse<User>(res);
@@ -135,7 +157,7 @@ export async function register(name: string, email: string, password?: string): 
 export async function login(email: string, password: string): Promise<User> {
   const res = await fetchWithTimeout(`${BASE_URL}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await getHeaders(),
     body: JSON.stringify({ email, password }),
   });
   return handleResponse<User>(res);
@@ -156,32 +178,22 @@ export async function getCurrentUser(userId: number, forceRefresh = false): Prom
 }
 
 export async function logout(userId?: number): Promise<void> {
-  // Call backend logout endpoint first (with userId if available)
   try {
     if (userId) {
-      console.log('Calling backend logout endpoint for userId:', userId);
       const res = await fetchWithTimeout(`${BASE_URL}/auth/logout`, {
         method: 'POST',
         headers: await getHeaders(userId),
       });
-      const data = await handleResponse(res);
-      console.log('Backend logout response:', data);
+      await handleResponse(res);
     }
   } catch (e) {
     console.log('Backend logout error (non-critical):', e);
-    // Continue with clearing storage even if backend call fails
   }
-  
-  // Clear ALL AsyncStorage keys — cache entries + session keys
+
   try {
-    console.log('Clearing all AsyncStorage keys');
     const allKeys = await AsyncStorage.getAllKeys();
-    console.log('Found AsyncStorage keys:', allKeys);
     if (allKeys.length > 0) await AsyncStorage.multiRemove(allKeys);
-    console.log('AsyncStorage cleared successfully');
   } catch {
-    console.log('Error clearing all keys, falling back to individual removal');
-    // Fallback: remove known keys individually
     await AsyncStorage.multiRemove([
       'userId', 'userName', 'userEmail',
       'user', 'userData', 'token', 'authToken',
@@ -248,8 +260,6 @@ export async function verifyRazorpay(
     verified: boolean; txn_ref: string; coins_earned: number; total_coins: number;
   }>(res);
 
-  // Bust stale cache then background-refresh everything so home shows fresh
-  // data the moment the user navigates back — no manual pull-to-refresh needed.
   await invalidateUserCache(userId);
   Promise.all([
     getPaymentHistory(userId, true),
@@ -353,7 +363,7 @@ export async function getFlipkartCoupons(forceRefresh = false): Promise<Flipkart
     if (cached) return cached;
   }
   const res = await fetchWithTimeout(`${BASE_URL}/collections/flipkart`, { method: 'GET' });
-  const data = await handleResponse<FlipkartCoupon[]>(res);
+  const data = await handleResponse<AmazonCoupon[]>(res);
   await cacheSet(key, data);
   return data;
 }
@@ -366,11 +376,28 @@ export async function purchaseItem(userId: number, request: PurchaseRequest): Pr
   });
   const data = await handleResponse<PurchaseResult>(res);
 
-  // Bust user cache — coins changed
   await Promise.all([
     cacheDelete(CacheKey.user(userId)),
     cacheDelete(CacheKey.profile(userId)),
   ]);
 
   return data;
+}
+
+// ─── Withdraw ─────────────────────────────────────────────────────────────────
+
+export async function withdrawTokens(
+  userId: number,
+  request: WithdrawRequest,
+): Promise<WithdrawResult> {
+  const res = await fetchWithTimeout(
+    `${BASE_URL}/withdraw`,
+    {
+      method:  'POST',
+      headers: await getHeaders(userId),   // includes ngrok header + X-User-Id
+      body:    JSON.stringify(request),
+    },
+    30_000,   // blockchain broadcast can be slow — give it 30s
+  );
+  return handleResponse<WithdrawResult>(res);
 }

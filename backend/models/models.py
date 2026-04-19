@@ -14,7 +14,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)  # Optional for backward compatibility
+    password_hash = Column(String, nullable=False)
     nova_coins = Column(Integer, default=0)
     phone = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
@@ -48,8 +48,8 @@ class MerchItem(Base):
     description = Column(Text, nullable=True)
     image_url = Column(String, nullable=True)
     coin_price = Column(Integer, nullable=False)
-    stock = Column(Integer, default=0)  # -1 = unlimited
-    category = Column(String, nullable=True)  # e.g. "apparel", "accessories"
+    stock = Column(Integer, default=0)
+    category = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -94,11 +94,25 @@ class Purchase(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    item_type = Column(String, nullable=False)  # "merch" | "amazon" | "flipkart"
+    item_type = Column(String, nullable=False)
     item_id = Column(Integer, nullable=False)
     item_name = Column(String, nullable=False)
     coins_spent = Column(Integer, nullable=False)
-    status = Column(String, default="confirmed")  # confirmed | shipped | delivered | cancelled
+    status = Column(String, default="confirmed")
     delivery_address = Column(Text, nullable=True)
     coupon_code_issued = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class WithdrawLog(Base):
+    """Blockchain token withdrawal records."""
+    __tablename__ = "withdraw_logs"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), nullable=False)
+    to_address   = Column(String, nullable=False)   # recipient wallet
+    amount       = Column(Float, nullable=False)    # token amount withdrawn
+    coins_spent  = Column(Integer, nullable=False)  # nova coins deducted
+    tx_hash      = Column(String, nullable=True)    # blockchain tx hash
+    status       = Column(String, default="pending")  # pending | success | failed
+    created_at   = Column(DateTime, default=datetime.utcnow)

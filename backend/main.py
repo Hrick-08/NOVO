@@ -27,6 +27,7 @@ from routers import (
 )
 from routers.test import router as test_router
 from agent import InvestingAgent
+from withdraw import router as withdraw_router
 
 load_dotenv()
 
@@ -60,6 +61,7 @@ app.include_router(profile_router)
 app.include_router(payments_router)
 app.include_router(collections_router)
 app.include_router(purchases_router)
+app.include_router(withdraw_router)
 # app.include_router(qr_router)
 def get_db():
     db = SessionLocal()
