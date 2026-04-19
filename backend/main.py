@@ -66,7 +66,7 @@ app.include_router(payments_router)
 app.include_router(collections_router)
 app.include_router(purchases_router)
 app.include_router(community_router)
-# app.include_router(qr_router)
+app.include_router(qr_router)
 
 # Serve static files
 static_path = os.path.join(os.path.dirname(__file__), 'static')

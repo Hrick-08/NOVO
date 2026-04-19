@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     View, Text, ScrollView, StyleSheet, Image,
-    TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Switch,
+    TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Switch, TextInput,
 } from 'react-native';
 import { Circle, Path, Svg } from 'react-native-svg';
 import { router, useNavigation } from 'expo-router';
@@ -54,6 +54,7 @@ export default function ProfileScreen() {
     const [error, setError] = useState<string | null>(null);
     const [loggingOut, setLoggingOut] = useState(false);
     const [updatingSafeMode, setUpdatingSafeMode] = useState(false);
+    const [safeLimitInput, setSafeLimitInput] = useState('');
 
     const fetchProfile = useCallback(async (forceRefresh = false) => {
         if (!userId) return;
@@ -62,6 +63,7 @@ export default function ProfileScreen() {
             setError(null);
             const data = await getProfile(userId, forceRefresh);
             setProfile(data);
+            setSafeLimitInput(data.safe_mode.limit.toString());
         } catch (e: any) {
             setError(e?.message ?? 'Failed to load profile');
         } finally {
@@ -80,6 +82,25 @@ export default function ProfileScreen() {
             setProfile(prev => prev ? { ...prev, safe_mode: updated } : null);
         } catch (e: any) {
             Alert.alert('Error', e?.message ?? 'Failed to update safe mode');
+        } finally {
+            setUpdatingSafeMode(false);
+        }
+    };
+
+    const handleSafeLimitUpdate = async () => {
+        if (!userId || !profile) return;
+        const newLimit = parseFloat(safeLimitInput);
+        if (isNaN(newLimit) || newLimit <= 0) {
+            Alert.alert('Invalid Limit', 'Please enter a valid positive number for the safe limit.');
+            return;
+        }
+        setUpdatingSafeMode(true);
+        try {
+            const updated = await updateSafeMode(userId, { limit: newLimit });
+            setProfile(prev => prev ? { ...prev, safe_mode: updated } : null);
+            Alert.alert('Success', 'Safe limit updated successfully.');
+        } catch (e: any) {
+            Alert.alert('Error', e?.message ?? 'Failed to update safe limit');
         } finally {
             setUpdatingSafeMode(false);
         }
@@ -204,9 +225,26 @@ export default function ProfileScreen() {
                     />
                 </View>
                 {profile.safe_mode.enabled && (
-                    <Text style={[styles.safeModeLimit, { color: colors.icon }]}>
-                        Safe limit: ₹{profile.safe_mode.limit.toLocaleString('en-IN')}
-                    </Text>
+                    <View style={styles.safeLimitContainer}>
+                        <Text style={[styles.safeModeTitle, { color: colors.text }]}>Safe Limit (₹)</Text>
+                        <TextInput
+                            style={[styles.safeLimitInput, { color: colors.text, borderColor: colors.border }]}
+                            value={safeLimitInput}
+                            onChangeText={setSafeLimitInput}
+                            keyboardType="numeric"
+                            placeholder="Enter safe limit"
+                            placeholderTextColor={colors.icon}
+                        />
+                        <TouchableOpacity
+                            style={[styles.updateLimitBtn, { backgroundColor: colors.tint }]}
+                            onPress={handleSafeLimitUpdate}
+                            disabled={updatingSafeMode}
+                        >
+                            <Text style={styles.updateLimitBtnText}>
+                                {updatingSafeMode ? 'Updating...' : 'Update Limit'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
 
@@ -268,6 +306,10 @@ const styles = StyleSheet.create({
     safeModeTitle: { fontSize: 14, fontWeight: '500' },
     safeModeDesc: { fontSize: 12 },
     safeModeLimit: { fontSize: 12, marginTop: 8 },
+    safeLimitContainer: { marginTop: 16, gap: 8 },
+    safeLimitInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14 },
+    updateLimitBtn: { paddingVertical: 10, borderRadius: 8, alignItems: 'center', marginTop: 8 },
+    updateLimitBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
     logoutBtn: { borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
     logoutText: { fontSize: 15, fontWeight: '600' },
 });
