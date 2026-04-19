@@ -6,6 +6,12 @@ from .models import (
     AmazonCoupon,
     FlipkartCoupon,
     Purchase,
+    Event,
+    EventParticipant,
+    Squad,
+    SquadMember,
+    Badge,
+    UserBadge,
 )
 
 __all__ = [
@@ -15,4 +21,10 @@ __all__ = [
     "AmazonCoupon",
     "FlipkartCoupon",
     "Purchase",
+    "Event",
+    "EventParticipant",
+    "Squad",
+    "SquadMember",
+    "Badge",
+    "UserBadge",
 ]

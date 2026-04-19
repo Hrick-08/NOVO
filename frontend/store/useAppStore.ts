@@ -31,6 +31,7 @@ interface AppState {
   monthlySummary: MonthlySummary | null;
   setUser: (user: User | null) => void;
   updateNovaCoins: (coins: number) => void;
+  updateUserCoins: (updater: (prev: number) => number) => void;
   setPaymentHistory: (history: Payment[]) => void;
   setMonthlySummary: (summary: MonthlySummary | null) => void;
   setLoading: (loading: boolean) => void;
@@ -46,6 +47,12 @@ export const useAppStore = create<AppState>((set) => ({
   updateNovaCoins: (coins) =>
     set((state) => ({
       user: state.user ? { ...state.user, nova_coins: coins } : null,
+    })),
+  updateUserCoins: (updater) =>
+    set((state) => ({
+      user: state.user 
+        ? { ...state.user, nova_coins: updater(state.user.nova_coins) } 
+        : null,
     })),
   setPaymentHistory: (history) => set({ paymentHistory: history }),
   setMonthlySummary: (summary) => set({ monthlySummary: summary }),
