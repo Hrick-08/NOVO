@@ -1,13 +1,10 @@
-# portfolio.py
-
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from configs import RISK_FREE_RATE, MONTE_CARLO_SIMS
+from routers.configs import RISK_FREE_RATE, MONTE_CARLO_SIMS
+from routers.stock import fetch, rule_score, train_ml_models, StackingEnsemble
+from routers.quiz import run_quiz
 
-# ── Asset Universe ────────────────────────────────────────────────────────────
-# Curated NSE instruments per asset class.
-# Each profile draws from these — aggressive gets more from EQUITY_HIGH_RISK, etc.
 
 EQUITY_LARGE_CAP = {
     "RELIANCE":   "Reliance Industries",
@@ -37,7 +34,7 @@ GOLD_INSTRUMENTS = {
     "SGBMAR29":   "Sovereign Gold Bond 2029",
 }
 
-# Profile → which pools to draw from, and how many stocks
+
 PROFILE_CONFIG = {
     "Conservative": {
         "equity_pool":  EQUITY_LARGE_CAP,
@@ -74,15 +71,8 @@ PROFILE_CONFIG = {
 }
 
 
-# ── Step 1: Pick best stocks using your ML engine ─────────────────────────────
 
-def pick_equity(pool: dict[str, str], n: int, sector_map: dict) -> list[str]:
-    """
-    Run your stock.py scoring on the equity pool and return top-n tickers.
-    Imports lazily so stock.py failures don't break the whole portfolio builder.
-    """
-    from stock import fetch, rule_score, train_ml_models, StackingEnsemble
-
+def pick_equity(pool,n, sector_map):
     stock_data = {}
     for ticker in pool:
         df = fetch(ticker)
@@ -90,7 +80,6 @@ def pick_equity(pool: dict[str, str], n: int, sector_map: dict) -> list[str]:
             stock_data[ticker] = df
 
     if not stock_data:
-        # Fallback: just return first n from pool
         return list(pool.keys())[:n]
 
     rule_results = {
@@ -123,7 +112,7 @@ def pick_equity(pool: dict[str, str], n: int, sector_map: dict) -> list[str]:
 
 # ── Step 2: Fetch historical returns for allocation math ──────────────────────
 
-def fetch_returns(tickers: list[str], period: str = "1y") -> pd.DataFrame:
+def fetch_returns(tickers,period = "1y"):
     """Download adjusted close and return daily pct_change matrix."""
     raw = yf.download(
         [f"{t}.NS" for t in tickers],
@@ -165,9 +154,6 @@ def monte_carlo(
         daily_rets = mean_returns[:, None] + L @ random_shocks  
         port_rets = weights @ daily_rets 
         results[i] = initial * np.exp(np.sum(np.log(1 + port_rets)))
-        print("mean_returns shape:", mean_returns.shape)
-        print("L shape:", L.shape)
-        print("random_shocks shape:", random_shocks.shape)
 
     final_values = results
     returns_pct  = (final_values - initial) / initial * 100
@@ -181,11 +167,9 @@ def monte_carlo(
         "loss_probability": round(float(np.mean(final_values < initial) * 100), 1),
         "best_case":        round(float(np.percentile(final_values, 95)), 2),
         "worst_case":       round(float(np.percentile(final_values, 5)), 2),
-        "raw_returns_pct":  returns_pct.tolist(),  # full distribution for charts
+        "raw_returns_pct":  returns_pct.tolist(), 
     }
 
-
-# ── Step 4: Portfolio Health Score ────────────────────────────────────────────
 
 def health_score(
     weights:      np.ndarray,
@@ -261,9 +245,6 @@ def build_portfolio(profile: dict, investment_amount: float = 10_000) -> dict:
     profile_name = profile["profile"]
     config       = PROFILE_CONFIG[profile_name]
 
-    print(f"\nBuilding {profile_name} portfolio...")
-
-    # Sector map for rule_score()
     sector_map = {
         **{t: "Large Cap Equity" for t in EQUITY_LARGE_CAP},
         **{t: "Mid/Small Equity" for t in EQUITY_MID_SMALL},
@@ -271,25 +252,19 @@ def build_portfolio(profile: dict, investment_amount: float = 10_000) -> dict:
         **{t: "Gold"             for t in GOLD_INSTRUMENTS},
     }
 
-    # Pick best equity using ML engine
-    print("  Running ML stock selection...")
     equity_tickers = pick_equity(
         config["equity_pool"],
         config["equity_picks"],
         sector_map,
     )
 
-    # Debt and gold — just take what's available (small pools)
     debt_tickers = list(config["debt_pool"].keys())[:config["debt_picks"]]
     gold_tickers = list(config["gold_pool"].keys())[:config["gold_picks"]]
 
     all_tickers = equity_tickers + debt_tickers + gold_tickers
 
-    # Fetch returns
-    print("  Fetching historical returns...")
     returns_df = fetch_returns(all_tickers)
 
-    # Drop tickers with missing data
     all_tickers = [t for t in all_tickers if t in returns_df.columns]
     returns_df  = returns_df[all_tickers].dropna(axis=1)
     all_tickers = returns_df.columns.tolist()
@@ -299,9 +274,6 @@ def build_portfolio(profile: dict, investment_amount: float = 10_000) -> dict:
 
     n = len(all_tickers)
 
-    # Build weights from profile percentages
-    # Equity gets equity_pct split equally among equity picks,
-    # debt and gold similarly
     n_eq   = len([t for t in all_tickers if t in equity_tickers])
     n_debt = len([t for t in all_tickers if t in debt_tickers])
     n_gold = len([t for t in all_tickers if t in gold_tickers])
@@ -322,21 +294,12 @@ def build_portfolio(profile: dict, investment_amount: float = 10_000) -> dict:
     weights = np.array(weights)
     weights /= weights.sum()  # normalise to exactly 1.0
 
-    # Stats
     mean_returns = returns_df.mean().values
     cov_matrix   = returns_df.cov().values
 
-    # Monte Carlo
-    print("  Running Monte Carlo simulation...")
     mc = monte_carlo(weights, mean_returns, cov_matrix, initial=investment_amount)
-
-    # Health score
     health = health_score(weights, returns_df, profile)
-
-    # ₹X scenarios
     scenarios = what_would_x_do(mc, investment_amount)
-
-    # Build named holdings
     name_map = {
         **EQUITY_LARGE_CAP,
         **EQUITY_MID_SMALL,
@@ -370,49 +333,7 @@ def build_portfolio(profile: dict, investment_amount: float = 10_000) -> dict:
     }
 
 
-# ── Pretty Print ──────────────────────────────────────────────────────────────
-
-def print_portfolio(result: dict):
-    DIVIDER = "─" * 55
-
-    print(f"\n{DIVIDER}")
-    print(f"  {result['profile']} Portfolio  —  ₹{result['amount']:,.0f}")
-    print(DIVIDER)
-
-    print(f"\n  {'Instrument':<28} {'Class':<8} {'Weight':>7}  {'Amount':>10}")
-    print(f"  {'─'*28} {'─'*8} {'─'*7}  {'─'*10}")
-    for h in result["holdings"]:
-        print(
-            f"  {h['name']:<28} {h['asset_class']:<8} "
-            f"{h['weight']:>6.1f}%  ₹{h['rupees']:>9,.2f}"
-        )
-
-    h = result["health"]
-    print(f"\n  Portfolio Health Score: {h['overall']}/100")
-    print(f"    Diversification  : {h['diversification']}")
-    print(f"    Risk-adjusted    : {h['risk_adjusted']}")
-    print(f"    Horizon fit      : {h['horizon_fit']}")
-    print(f"    Expected return  : {h['annual_return']}% p.a.")
-    print(f"    Volatility       : {h['annual_vol']}% p.a.")
-
-    s = result["scenarios"]
-    mc = result["monte_carlo"]
-    print(f"\n  What would ₹{s['amount']:,.0f} do in 1 year?")
-    print(f"    Worst case  (10th pct) : ₹{s['safe']:>10,.2f}")
-    print(f"    Most likely (median)   : ₹{s['moderate']:>10,.2f}")
-    print(f"    Best case   (90th pct) : ₹{s['optimistic']:>10,.2f}")
-    print(f"    Loss probability       : {mc['loss_probability']}%")
-    print(f"    (i.e. {mc['loss_probability']}% chance you earn less than you put in)")
-
-    print(f"\n{DIVIDER}\n")
-
-
-# ── Entry Point ───────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
-    from quiz import run_quiz
-
     profile = run_quiz()
     amount  = float(input("How much do you want to invest (₹)? ").strip())
     result  = build_portfolio(profile, investment_amount=amount)
-    print_portfolio(result)

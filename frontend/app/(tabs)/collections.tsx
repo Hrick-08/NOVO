@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Svg, Path, Circle } from 'react-native-svg';
 import { Colors } from '@/config/theme';
+import { BASE_URL } from '@/config/api';
 import { useAppStore } from '@/store/useAppStore';
 import {
   getMerch,
@@ -28,6 +29,16 @@ const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
 
 type CollectionItem = (MerchItem | AmazonCoupon | FlipkartCoupon) & { type: 'merch' | 'amazon' | 'flipkart' };
+
+const getImageUrl = (imageUrl: string): string => {
+  if (!imageUrl) return '';
+  // If it's already an absolute URL, return as is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  // Otherwise prepend BASE_URL
+  return `${BASE_URL}${imageUrl}`;
+};
 
 export default function CollectionsScreen() {
   const colors = Colors.dark;
@@ -157,7 +168,7 @@ export default function CollectionsScreen() {
               <View key={`${item.type}-${item.id}`} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.imageContainer}>
                   {item.image_url ? (
-                    <Image source={{ uri: item.image_url }} style={styles.image} />
+                    <Image source={{ uri: getImageUrl(item.image_url) }} style={styles.image} />
                   ) : (
                     <View style={[styles.imagePlaceholder, { backgroundColor: colors.border }]}>
                       <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">

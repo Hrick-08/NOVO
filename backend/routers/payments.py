@@ -18,6 +18,7 @@ from schemas import (
     VerifyRazorpayRequest,
 )
 from utils import get_streak_multiplier
+from utils.safe_mode import evaluate_risk
 import razorpay
 from dotenv import load_dotenv
 from datetime import datetime
@@ -49,6 +50,28 @@ def create_order(
     if not user:
         print(f"[DEBUG] User not found: {x_user_id}")
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Safe Mode Check
+    if user.safe_mode_enabled and not request.bypass_safe_mode:
+        txn = {
+            "amount": request.amount,
+            "receiver_id": request.merchant_upi
+        }
+        risk_assessment = evaluate_risk(txn, user, db)
+        print(f"[DEBUG] Risk assessment: {risk_assessment}")
+        
+        if risk_assessment["risk_level"] == "high":
+            return {
+                "warning": True,
+                "risk_level": risk_assessment["risk_level"],
+                "risk_score": risk_assessment["risk_score"],
+                "reasons": risk_assessment["reasons"],
+                "txn_details": {
+                    "amount": request.amount,
+                    "merchant_name": request.merchant_name,
+                    "merchant_upi": request.merchant_upi
+                }
+            }
 
     txn_ref = f"novo_{uuid.uuid4().hex[:12]}"
     print(f"[DEBUG] Generated txn_ref={txn_ref}")

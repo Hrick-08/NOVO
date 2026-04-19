@@ -1,32 +1,11 @@
-"""
-stock.py — NSE Portfolio Allocation Engine
-==========================================
-Pipeline:
-  1. Fetch 1yr of OHLCV data from Yahoo Finance
-  2. Rule-based scoring  (RSI, MA, MACD, Bollinger, volume)
-  3. XGBoost signal      (trained per-ticker on historical labels)
-  4. SHAP explanations   (top drivers per stock)
-  5. Stacking ensemble   (LogisticRegression learns rule vs ML weight)
-  6. Risk-parity allocation on fused score
-  7. Diversification warnings
-"""
-
-import warnings
-warnings.filterwarnings("ignore")
-
 import numpy as np
 import pandas as pd
 import yfinance as yf
 import xgboost as xgb
 import shap
-
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.metrics import classification_report
 
-# ── Config ────────────────────────────────────────────────────────────────────
 
 STOCKS: dict[str, str] = {
     "RELIANCE":   "Energy",

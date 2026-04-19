@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button, Card, Loading } from '@/components';
 import { Colors } from '@/config/theme';
-import { createOrder, verifyRazorpay } from '@/hooks/useApi';
+import { createOrder, verifyRazorpay, PaymentOrder, RiskWarning } from '@/hooks/useApi';
 import type { QRData } from '@/hooks/useApi';
 
 // ─── Test-mode simulated checkout ────────────────────────────────────────────
@@ -60,8 +60,39 @@ export default function ConfirmScreen() {
       console.log('[PAY] 1. userId =', userId);
 
       // 2. Create order on backend
-      const order = await createOrder(qrData, userId, parsedAmount);
-      console.log('[PAY] 2. order =', order.order_id, '| txn_ref =', order.txn_ref);
+      let order: PaymentOrder;
+      const orderResponse = await createOrder(qrData, userId, parsedAmount);
+      console.log('[PAY] 2. order response =', orderResponse);
+
+      // Check for risk warning
+      if ('warning' in orderResponse && orderResponse.warning) {
+        const warning = orderResponse as RiskWarning;
+        const proceed = await new Promise<boolean>((resolve) => {
+          console.log(`This transaction may be risky:\n\n${warning.reasons.join('\n')}\n\nRisk Level: ${warning.risk_level.toUpperCase()}\nRisk Score: ${warning.risk_score}`,
+          Alert.alert(
+            'Risk Warning',
+            `This transaction may be risky:\n\n${warning.reasons.join('\n')}\n\nRisk Level: ${warning.risk_level.toUpperCase()}\nRisk Score: ${warning.risk_score}`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Proceed Anyway', style: 'destructive', onPress: () => resolve(true) },
+            ]
+            )
+          );
+        });
+        if (!proceed) return;
+
+        // Proceed with bypass
+        const bypassOrder = await createOrder(qrData, userId, parsedAmount, true);
+        if ('warning' in bypassOrder) {
+          Alert.alert('Error', 'Failed to proceed with transaction');
+          return;
+        }
+        order = bypassOrder as PaymentOrder;
+        console.log('[PAY] 2. bypass order =', order.order_id, '| txn_ref =', order.txn_ref);
+      } else {
+        order = orderResponse as PaymentOrder;
+        console.log('[PAY] 2. order =', order.order_id, '| txn_ref =', order.txn_ref);
+      }
 
       // 3. Await checkout result synchronously — payment_id guaranteed before verify
       const { payment_id, signature } = await simulateCheckout(order.order_id);
