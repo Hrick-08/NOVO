@@ -3,50 +3,21 @@ import re
 from groq import Groq
 from tavily import TavilyClient
 from configs import GROQ_API_KEY, TAVILY_API_KEY
+import numpy as np
 
 client = Groq(api_key=GROQ_API_KEY)
 tavily = TavilyClient(api_key=TAVILY_API_KEY)
 
 
-# ── Guardrail ─────────────────────────────────────────
-
-BLOCKED_PATTERNS = [
-    "i will buy", "i will sell", "execute the trade",
-    "placing the order", "i have purchased",
-    "guaranteed return", "you will definitely",
-    "100% safe", "no risk",
-]
-
-SOFTEN_PATTERNS = {
-    "you should buy": "you may want to consider buying",
-    "you must invest": "one option is to invest",
-}
-
-def guardrail(text: str):
-    lower = text.lower()
-
-    for pattern in BLOCKED_PATTERNS:
-        if pattern in lower:
-            return False, "I can only provide guidance — not execute trades."
-
-    cleaned = text
-    for k, v in SOFTEN_PATTERNS.items():
-        cleaned = cleaned.replace(k, v)
-
-    return True, cleaned
-
-
-# ── Tools ────────────────────────────────────────────
-
-def handle_search_market_news(query: str):
+def handle_search_market_news(query):
     try:
         res = tavily.search(query=query, max_results=3, include_answer=True)
         return res.get("answer", "No results found.")
     except:
         return "Search failed."
 
+
 def handle_simulate_investment(amount, risk_level, horizon_days=252):
-    import numpy as np
 
     params = {
         "conservative": (0.07, 0.08),
@@ -73,112 +44,110 @@ def handle_simulate_investment(amount, risk_level, horizon_days=252):
         "loss_probability": round(float(sum(r < amount for r in results) / sims * 100), 1)
     })
 
-def handle_explain_term(term: str):
-    return f"{term} is a financial concept explained simply."
 
-
-def run_tool(name, args):
-    if name == "search_market_news":
-        return handle_search_market_news(args["query"])
-    if name == "simulate_investment":
-        return handle_simulate_investment(
-            args["amount"], args["risk_level"], args.get("horizon_days", 252)
-        )
-    if name == "explain_term":
-        return handle_explain_term(args["term"])
-    return "Unknown tool"
-
-
-# ── Prompt ───────────────────────────────────────────
 
 def build_system_prompt():
     return """
-You are an AI investing assistant.
+You are an AI investing assistant for beginners.
+
+Rules:
+- Use simple English
+- Always explain in INR
+- Don't entertain out of finance chats.
 
 CRITICAL:
-If using a tool → return ONLY JSON.
+Return ONLY JSON.
 
-Format:
-{"tool": "...", "input": {...}}
+Available tools:
+- search_market_news
+- simulate_investment
 
-No explanation allowed with tool calls.
+If any of the input from the user requires the above tools, return in the following format
+
+- search_market_tool requires the query itself so return
+  {"tool":"market_news","query": {...}}
+
+- simulate_investment requires amount, risk_level and horizon_days(default = 252)
+    return {"tool": "simulate_investment","amount":(int), "risk_level": one of ["conservative", "balanced", "growth", "aggressive"], "horizon_days":(int)}
+
+No explanation allowed with tool calls, JSON ONLY.
+
+If the question does not require any tools, you are free to answer in you own language.
+
 """
-
-
-# ── Agent ────────────────────────────────────────────
 
 class InvestingAgent:
 
-    def __init__(self):
-        self.system = build_system_prompt()
-        self.history = []
+    def __init__(self, portfolio = None):
+        self.portfolio= portfolio
 
-    def extract_json(self, text):
-        match = re.search(r'\{.*\}', text, re.DOTALL)
-        if not match:
-            return None
-        try:
-            return json.loads(match.group())
-        except:
-            return None
+    def build_context(self):
+        if not self.portfolio:
+            return ""
+
+        holdings = "\n".join([f"{h['name']} ({h['ticker']}): {h['weight']}%"
+                              for h in self.portfolio["holdings"]
+                              ])
+        
+        return f"""User Portfolio: 
+                    {holdings}
+
+                    Risk: {self.portfolio["profile"]}
+                    Loss Probability: {self.portfolio["monte_carlo"]["loss_probability"]}%
+
+                """
+        
 
     def chat(self, user_message):
-        self.history.append({"role": "user", "content": user_message})
+        context = self.build_context()
+        system_prompt = build_system_prompt()
 
-        for _ in range(5):  
+        completion = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role":"system","content":system_prompt},
+            {"role":"system","content":context},
+            {"role": "user", "content": user_message}
+        ])
 
-            response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[
-                    {"role": "system", "content": self.system},
-                    *self.history
-                ],
-                temperature=0.3,
+        response = completion.choices[0].message.content
+
+        clean = response.strip()
+
+        if "```json" in clean:
+            clean = clean.split("```json")[1].split("```")[0].strip()
+
+        elif "```" in clean:
+            clean = clean.split("```")[1].split("```")[0].strip()
+
+
+        try:
+            parsed = json.loads(clean)
+
+            if parsed.get("tool") == "market_news":
+                return handle_search_market_news(parsed["query"])
+
+            if parsed.get("tool") == "simulate_investment":
+                return handle_simulate_investment(
+                                                    parsed["amount"],
+                                                    parsed["risk_level"],
+                                                    parsed.get("horizon_days", 252)
             )
-
-            reply = response.choices[0].message.content.strip()
-
-            parsed = self.extract_json(reply)
-
             
-            if parsed and "tool" in parsed:
-                result = run_tool(parsed["tool"], parsed["input"])
+        except:
+            pass
 
-                self.history.append({"role": "assistant", "content": reply})
-                self.history.append({
-                    "role": "user",
-                    "content": f"Tool result: {result}"
-                })
+        return clean
+        
 
-                continue
-
-           
-            is_safe, cleaned = guardrail(reply)
-
-            
-            cleaned = re.sub(r'\{.*"tool".*\}', '', cleaned, flags=re.DOTALL)
-
-            self.history.append({"role": "assistant", "content": cleaned})
-
-            return cleaned
-
-        print(reply)
-        return "Something went wrong. Please try again."
-
-
-# ── CLI ──────────────────────────────────────────────
 
 def run_agent():
     agent = InvestingAgent()
 
     while True:
         user_input = input("You: ")
-
         if user_input.lower() == "quit":
             break
-
-        print("Agent:", agent.chat(user_input))
-
 
 if __name__ == "__main__":
     run_agent()

@@ -1,15 +1,13 @@
 """
 FastAPI Payment Application with modular structure.
 """
-
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
-from fastapi import Depends, Header, HTTPException
+from fastapi import Depends, Header, HTTPException, Query
 from datetime import datetime
 from quiz import score_to_profile
 from portfolio import build_portfolio
@@ -27,6 +25,8 @@ from routers import (
 )
 from routers.test import router as test_router
 from agent import InvestingAgent
+import yfinance as yf
+import pandas as pd
 
 load_dotenv()
 
@@ -348,22 +348,18 @@ def score_quiz(body: QuizAnswers):
 
 @app.post("/portfolio/build")
 def build(body: InvestRequest):
-    """
-    Build portfolio from profile + amount.
-    Also initialises the agent for this session with portfolio context.
-    """
+    portfolios = {}
+
     profile = {
         "profile":     body.profile_name,
         "total_score": body.total_score,
         "answers":     body.answers,
         **_pct_from_profile(body.profile_name),
     }
-    print(profile)
 
     result = build_portfolio(profile, investment_amount=body.amount)
-
-    # Boot agent with portfolio context for this session
-    agents[body.session_id] = InvestingAgent()
+    portfolios[body.session_id] = result
+    agents[body.session_id] = InvestingAgent(result)
 
     return result
 
@@ -399,7 +395,6 @@ def simulate(amount: float, risk_level: str, horizon_days: int = 252):
     return json.loads(result)
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _pct_from_profile(name: str) -> dict:
     MAP = {
@@ -409,3 +404,138 @@ def _pct_from_profile(name: str) -> dict:
         "Aggressive":   {"equity_pct": 90, "debt_pct":  5, "gold_pct":  5},
     }
     return MAP.get(name, MAP["Balanced"])
+
+
+VALID_PERIODS = {"1wk", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
+
+PERIOD_INTERVAL_MAP = {
+    "1wk":  "1d",
+    "1mo":  "1d",
+    "3mo":  "1d",
+    "6mo":  "1wk",
+    "1y":   "1wk",
+    "2y":   "1wk",
+    "5y":   "1mo",
+    "10y":  "1mo",
+    "ytd":  "1d",
+    "max":  "1mo",
+}
+
+
+@app.get("/stock")
+def get_stock(
+    ticker: str = Query(..., description="yfinance ticker e.g. RELIANCE.NS"),
+    period: str = Query("1y", description="1wk | 3mo | 1y | 5y"),
+):
+    if period not in VALID_PERIODS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid period '{period}'. Valid: {sorted(VALID_PERIODS)}",
+        )
+
+    interval = PERIOD_INTERVAL_MAP.get(period, "1d")
+
+    try:
+        tkr = yf.Ticker(ticker)
+        hist: pd.DataFrame = tkr.history(period=period, interval=interval)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"yfinance error: {str(e)}")
+
+    if hist.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No data found for ticker '{ticker}'. Check the ticker symbol.",
+        )
+
+    hist = hist.reset_index()
+    date_col = "Date" if "Date" in hist.columns else "Datetime"
+
+    dates  = hist[date_col].dt.strftime("%Y-%m-%d").tolist()
+    closes = [round(float(v), 2) for v in hist["Close"].tolist()]
+
+    current_price = closes[-1]
+    prev_price    = closes[-2] if len(closes) > 1 else closes[-1]
+    change        = round(current_price - prev_price, 2)
+    change_pct    = round((change / prev_price) * 100, 2) if prev_price else 0.0
+
+    response = {
+        "ticker":     ticker,
+        "period":     period,
+        "interval":   interval,
+        "price":      current_price,
+        "change":     change,
+        "change_pct": change_pct,
+        "dates":      dates,
+        "closes":     closes,
+        "opens":      [round(float(v), 2) for v in hist["Open"].tolist()],
+        "highs":      [round(float(v), 2) for v in hist["High"].tolist()],
+        "lows":       [round(float(v), 2) for v in hist["Low"].tolist()],
+        "volumes":    [int(v) for v in hist["Volume"].tolist()],
+    }
+
+    return response
+
+
+@app.get("/search")
+def search_tickers(q: str = Query(..., description="Search query e.g. 'Reliance'")):
+
+    NSE_STOCKS = [
+        {"id": "RELIANCE",  "label": "Reliance Industries", "ticker": "RELIANCE.NS"},
+        {"id": "TCS",       "label": "Tata Consultancy Services", "ticker": "TCS.NS"},
+        {"id": "INFY",      "label": "Infosys",             "ticker": "INFY.NS"},
+        {"id": "HDFCBANK",  "label": "HDFC Bank",           "ticker": "HDFCBANK.NS"},
+        {"id": "ICICIBANK", "label": "ICICI Bank",          "ticker": "ICICIBANK.NS"},
+        {"id": "WIPRO",     "label": "Wipro",               "ticker": "WIPRO.NS"},
+        {"id": "AXISBANK",  "label": "Axis Bank",           "ticker": "AXISBANK.NS"},
+        {"id": "KOTAKBANK", "label": "Kotak Mahindra Bank", "ticker": "KOTAKBANK.NS"},
+        {"id": "LT",        "label": "Larsen & Toubro",     "ticker": "LT.NS"},
+        {"id": "HINDUNILVR","label": "Hindustan Unilever",  "ticker": "HINDUNILVR.NS"},
+        {"id": "BAJFINANCE","label": "Bajaj Finance",       "ticker": "BAJFINANCE.NS"},
+        {"id": "SBIN",      "label": "State Bank of India", "ticker": "SBIN.NS"},
+        {"id": "MARUTI",    "label": "Maruti Suzuki",       "ticker": "MARUTI.NS"},
+        {"id": "TATAMOTORS","label": "Tata Motors",         "ticker": "TATAMOTORS.NS"},
+        {"id": "ADANIENT",  "label": "Adani Enterprises",   "ticker": "ADANIENT.NS"},
+    ]
+    q_lower = q.lower()
+    results = [
+        s for s in NSE_STOCKS
+        if q_lower in s["label"].lower() or q_lower in s["id"].lower()
+    ]
+    return {"results": results}
+
+
+
+
+
+@app.get("/market_pulse")
+def market_pulse():
+
+    symbols = {
+        "NIFTY 50": "^NSEI",
+        "SENSEX": "^BSESN",
+        "BAJFINANCE": "BAJFINANCE.NS",
+        "NIFTY IT": "^CNXIT"
+    }
+
+    result = []
+
+    for name, ticker in symbols.items():
+        data = yf.Ticker(ticker).history(period="2d")
+
+        if len(data) < 2:
+            continue
+
+        prev_close = data["Close"].iloc[-2]
+        last_price = data["Close"].iloc[-1]
+
+        change = last_price - prev_close
+        pct = (change / prev_close) * 100
+
+        result.append({
+            "name": name,
+            "price": round(float(last_price), 2),
+            "pct": round(float(pct), 2),
+            "up": bool(pct >= 0)
+        })
+
+    return result
