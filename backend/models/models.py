@@ -19,6 +19,10 @@ class User(Base):
     phone = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Safe Mode settings
+    safe_mode_enabled = Column(Boolean, default=False)
+    safe_limit = Column(Float, default=1000.0)  # Default safe limit ₹1000
 
 
 class PaymentLog(Base):

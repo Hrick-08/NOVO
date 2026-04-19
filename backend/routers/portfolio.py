@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from configs import RISK_FREE_RATE, MONTE_CARLO_SIMS
-from stock import fetch, rule_score, train_ml_models, StackingEnsemble
-from quiz import run_quiz
+from routers.configs import RISK_FREE_RATE, MONTE_CARLO_SIMS
+from routers.stock import fetch, rule_score, train_ml_models, StackingEnsemble
+from routers.quiz import run_quiz
 
 
 EQUITY_LARGE_CAP = {

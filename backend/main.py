@@ -1,17 +1,16 @@
 """
 FastAPI Payment Application with modular structure.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
-from fastapi import Depends, Header, HTTPException, Query
-from datetime import datetime
-from quiz import score_to_profile
-from portfolio import build_portfolio
+from routers.agent import handle_simulate_investment
+from routers.quiz import score_to_profile
+from routers.portfolio import build_portfolio
 
 from db import engine, Base, SessionLocal
 from db.seed import seed_demo_data
@@ -26,9 +25,13 @@ from routers import (
 )
 from routers.community import router as community_router
 from routers.test import router as test_router
-from agent import InvestingAgent
+from routers.agent import InvestingAgent
+from datetime import datetime
 import yfinance as yf
 import pandas as pd
+import os
+
+
 
 load_dotenv()
 
@@ -335,7 +338,7 @@ def score_quiz(body: QuizAnswers):
     Takes raw quiz answers, returns risk profile.
     Scoring happens server-side — frontend just sends choices.
     """
-    from quiz import QUESTIONS
+    from routers.quiz import QUESTIONS
 
     total = 0
     for q in QUESTIONS:
@@ -398,7 +401,6 @@ def reset(body: ResetRequest):
 @app.post("/simulate")
 def simulate(amount: float, risk_level: str, horizon_days: int = 252):
     """Standalone Monte Carlo endpoint — used by the ₹X simulator."""
-    from agent import handle_simulate_investment
     import json
     result = handle_simulate_investment(amount, risk_level, horizon_days)
     return json.loads(result)
@@ -511,9 +513,6 @@ def search_tickers(q: str = Query(..., description="Search query e.g. 'Reliance'
         if q_lower in s["label"].lower() or q_lower in s["id"].lower()
     ]
     return {"results": results}
-
-
-
 
 
 @app.get("/market_pulse")

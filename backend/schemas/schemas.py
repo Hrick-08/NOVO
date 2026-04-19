@@ -35,6 +35,12 @@ class UpdateProfileRequest(BaseModel):
     avatar_url: Optional[str] = None
 
 
+class UpdateSafeModeRequest(BaseModel):
+    """Safe mode settings update request."""
+    enabled: Optional[bool] = None
+    limit: Optional[float] = None
+
+
 class UserResponse(BaseModel):
     """User profile response."""
     id: int
@@ -62,6 +68,12 @@ class ProfileStats(BaseModel):
     total_transactions: int
 
 
+class SafeModeSettings(BaseModel):
+    """Safe mode settings."""
+    enabled: bool
+    limit: float
+
+
 class ProfileResponse(BaseModel):
     """Full profile response."""
     id: int
@@ -71,6 +83,7 @@ class ProfileResponse(BaseModel):
     avatar_url: Optional[str]
     nova_coins: int
     member_since: str
+    safe_mode: SafeModeSettings
     stats: ProfileStats
     recent_redemptions: List[RecentRedemption]
 
@@ -104,6 +117,25 @@ class CreateOrderRequest(BaseModel):
     amount: float
     merchant_name: str
     merchant_upi: str
+    bypass_safe_mode: bool = False
+    force_proceed: bool = False
+
+
+class CreateOrderResponse(BaseModel):
+    """Create Razorpay order response."""
+    order_id: str
+    txn_ref: str
+    amount: int
+    key: str
+
+
+class RiskWarningResponse(BaseModel):
+    """Risk warning response for safe mode."""
+    warning: bool
+    risk_level: str
+    risk_score: int
+    reasons: List[str]
+    txn_details: dict
 
 
 class VerifyRazorpayRequest(BaseModel):

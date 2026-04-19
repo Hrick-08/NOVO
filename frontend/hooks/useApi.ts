@@ -22,6 +22,18 @@ export interface PaymentOrder {
   order_id: string; txn_ref: string; amount: number; key: string;
 }
 
+export interface RiskWarning {
+  warning: boolean;
+  risk_level: string;
+  risk_score: number;
+  reasons: string[];
+  txn_details: {
+    amount: number;
+    merchant_name: string;
+    merchant_upi: string;
+  };
+}
+
 export interface User {
   user_id?: number; id: number; name: string; email: string;
   nova_coins?: number; created_at?: string;
@@ -46,14 +58,25 @@ export interface Redemption {
   coins_spent: number; status: string; created_at: string;
 }
 
+export interface SafeModeSettings {
+  enabled: boolean;
+  limit: number;
+}
+
 export interface ProfileData {
   id: number; name: string; email: string; phone: string;
   avatar_url: string | null; nova_coins: number; member_since: string;
+  safe_mode: SafeModeSettings;
   stats: ProfileStats; recent_redemptions: Redemption[];
 }
 
 export interface UpdateProfileRequest {
   name?: string; phone?: string; avatar_url?: string;
+}
+
+export interface UpdateSafeModeRequest {
+  enabled?: boolean;
+  limit?: number;
 }
 
 // ─── Collections types ────────────────────────────────────────────────────────
@@ -282,7 +305,7 @@ export async function getMonthlySummary(userId: number, forceRefresh = false): P
   return data;
 }
 
-export async function createOrder(qrData: QRData, userId: number, amount: number): Promise<PaymentOrder> {
+export async function createOrder(qrData: QRData, userId: number, amount: number, bypassSafeMode = false): Promise<PaymentOrder | RiskWarning> {
   const res = await fetchWithTimeout(`${BASE_URL}/payments/create-order`, {
     method: 'POST',
     headers: await getHeaders(userId),
@@ -290,9 +313,10 @@ export async function createOrder(qrData: QRData, userId: number, amount: number
       amount,
       merchant_name: qrData.pn || qrData.pa,
       merchant_upi: qrData.pa,
+      bypass_safe_mode: bypassSafeMode,
     }),
   }, 15_000);
-  return handleResponse<PaymentOrder>(res);
+  return handleResponse<PaymentOrder | RiskWarning>(res);
 }
 
 export async function verifyRazorpay(
@@ -378,6 +402,18 @@ export async function updateProfile(
     body: JSON.stringify(data),
   });
   const updated = await handleResponse<Omit<ProfileData, 'member_since' | 'stats' | 'recent_redemptions'>>(res);
+  await cacheDelete(CacheKey.profile(userId));
+  return updated;
+}
+
+export async function updateSafeMode(
+  userId: number, data: UpdateSafeModeRequest
+): Promise<SafeModeSettings> {
+  const res = await fetchWithTimeout(`${BASE_URL}/profile/safe-mode`, {
+    method: 'PATCH', headers: await getHeaders(userId),
+    body: JSON.stringify(data),
+  });
+  const updated = await handleResponse<SafeModeSettings>(res);
   await cacheDelete(CacheKey.profile(userId));
   return updated;
 }

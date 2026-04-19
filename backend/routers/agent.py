@@ -2,7 +2,7 @@ import json
 import re
 from groq import Groq
 from tavily import TavilyClient
-from configs import GROQ_API_KEY, TAVILY_API_KEY
+from routers.configs import GROQ_API_KEY, TAVILY_API_KEY
 import numpy as np
 
 client = Groq(api_key=GROQ_API_KEY)

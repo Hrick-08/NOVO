@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     View, Text, ScrollView, StyleSheet, Image,
-    TouchableOpacity, ActivityIndicator, RefreshControl, Alert,
+    TouchableOpacity, ActivityIndicator, RefreshControl, Alert, Switch,
 } from 'react-native';
 import { Circle, Path, Svg } from 'react-native-svg';
 import { router, useNavigation } from 'expo-router';
 import { Colors } from '@/config/theme';
 import { useAppStore } from '@/store/useAppStore';
-import { getProfile, logout, ProfileData, Redemption } from '@/hooks/useApi';
+import { getProfile, logout, ProfileData, Redemption, updateSafeMode, SafeModeSettings } from '@/hooks/useApi';
 
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -53,6 +53,7 @@ export default function ProfileScreen() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loggingOut, setLoggingOut] = useState(false);
+    const [updatingSafeMode, setUpdatingSafeMode] = useState(false);
 
     const fetchProfile = useCallback(async (forceRefresh = false) => {
         if (!userId) return;
@@ -70,6 +71,19 @@ export default function ProfileScreen() {
     }, [userId]);
 
     useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+    const handleSafeModeToggle = async (enabled: boolean) => {
+        if (!userId || !profile) return;
+        setUpdatingSafeMode(true);
+        try {
+            const updated = await updateSafeMode(userId, { enabled });
+            setProfile(prev => prev ? { ...prev, safe_mode: updated } : null);
+        } catch (e: any) {
+            Alert.alert('Error', e?.message ?? 'Failed to update safe mode');
+        } finally {
+            setUpdatingSafeMode(false);
+        }
+    };
 
     const handleLogout = () => {
         Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -173,6 +187,30 @@ export default function ProfileScreen() {
             </View>
 
             <View style={[styles.section, { backgroundColor: colors.border + '22' }]}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Safe Mode</Text>
+                <View style={styles.safeModeRow}>
+                    <View style={styles.safeModeLeft}>
+                        <Text style={[styles.safeModeTitle, { color: colors.text }]}>Enable Safe Mode</Text>
+                        <Text style={[styles.safeModeDesc, { color: colors.icon }]}>
+                            Get warnings for potentially risky transactions
+                        </Text>
+                    </View>
+                    <Switch
+                        value={profile.safe_mode.enabled}
+                        onValueChange={handleSafeModeToggle}
+                        disabled={updatingSafeMode}
+                        trackColor={{ false: colors.border, true: colors.tint + '44' }}
+                        thumbColor={profile.safe_mode.enabled ? colors.tint : colors.icon}
+                    />
+                </View>
+                {profile.safe_mode.enabled && (
+                    <Text style={[styles.safeModeLimit, { color: colors.icon }]}>
+                        Safe limit: ₹{profile.safe_mode.limit.toLocaleString('en-IN')}
+                    </Text>
+                )}
+            </View>
+
+            <View style={[styles.section, { backgroundColor: colors.border + '22' }]}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Redemptions</Text>
                 {profile.recent_redemptions.length === 0
                     ? <Text style={[styles.emptyText, { color: colors.icon }]}>No redemptions yet</Text>
@@ -225,6 +263,11 @@ const styles = StyleSheet.create({
     redemptionRight: { alignItems: 'flex-end', gap: 2 },
     redemptionCoins: { fontSize: 14, fontWeight: '600' },
     redemptionStatus: { fontSize: 11, textTransform: 'capitalize' },
+    safeModeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    safeModeLeft: { flex: 1, gap: 2 },
+    safeModeTitle: { fontSize: 14, fontWeight: '500' },
+    safeModeDesc: { fontSize: 12 },
+    safeModeLimit: { fontSize: 12, marginTop: 8 },
     logoutBtn: { borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
     logoutText: { fontSize: 15, fontWeight: '600' },
 });
