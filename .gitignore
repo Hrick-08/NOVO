@@ -74,3 +74,7 @@ backend/payscan.db
 
 .chroma/
 >>>>>>> Stashed changes
+
+backend/NOVO.db
+backend/NOVO.DB-shm
+backend/db-wal

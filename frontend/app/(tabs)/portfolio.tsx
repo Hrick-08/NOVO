@@ -7,9 +7,9 @@ import {
 import Svg, { Circle, Path, G, Text as SvgText } from 'react-native-svg';
 import { Colors } from '@/config/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { BASE_URL } from '@/config/api';
 
-
-const API = 'http://localhost:8000'; 
+const API = BASE_URL;
 
 const colors = Colors.dark;
 
@@ -122,7 +122,6 @@ function AllocationBar({ holdings }: { holdings: Holding[] }) {
     Gold:   '#fbbf24',
   };
 
-  // Merge by asset class
   const merged: Record<string, number> = {};
   holdings.forEach(h => {
     merged[h.asset_class] = (merged[h.asset_class] || 0) + h.weight;
@@ -192,50 +191,63 @@ function ChatBubble({ message }: { message: Message }) {
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function Portfolio() {
-  const { portfolio: storePortfolio, sessionId: storeSessionId } = useAppStore();
-  
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(storePortfolio);
-  const [sessionId, setSessionId] = useState<string>(storeSessionId || '');
+  // ── Read directly from store — never copy into local state ──
+  const { portfolio, sessionId } = useAppStore();
+
   const [messages,  setMessages]  = useState<Message[]>([]);
   const [input,     setInput]     = useState('');
   const [agentBusy, setAgentBusy] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
 
+  // Set welcome message once portfolio is available
   useEffect(() => {
-    // Initialize with store data
-    if (storePortfolio) {
-      setPortfolio(storePortfolio);
+    if (portfolio) {
       setMessages([{
         role: 'agent',
-        text: `Your ${storePortfolio.profile} portfolio is ready! I've invested ₹${storePortfolio.amount.toLocaleString('en-IN')} across ${storePortfolio.holdings.length} instruments. Ask me anything about it.`,
+        text: `Your ${portfolio.profile} portfolio is ready! I've invested ₹${portfolio.amount.toLocaleString('en-IN')} across ${portfolio.holdings.length} instruments. Ask me anything about it.`,
       }]);
     }
-    if (storeSessionId) {
-      setSessionId(storeSessionId);
-    }
-  }, [storePortfolio, storeSessionId]);
+  }, [portfolio]);
 
 
   async function handleSend() {
     if (!input.trim() || agentBusy) return;
+
+    // Read sessionId fresh from store at call time — never stale
+    const currentSessionId = useAppStore.getState().sessionId;
+
+    if (!currentSessionId) {
+      setMessages(prev => [...prev, {
+        role: 'agent',
+        text: 'No active portfolio session. Please build a portfolio first.',
+      }]);
+      return;
+    }
+
     const userMsg = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setAgentBusy(true);
 
     try {
-      const res  = await fetch(`${API}/agent/chat`, {
+      const res = await fetch(`${API}/agent/chat`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ session_id: sessionId, message: userMsg }),
+        body:    JSON.stringify({ session_id: currentSessionId, message: userMsg }),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+
       const data = await res.json();
       setMessages(prev => [...prev, { role: 'agent', text: data.reply }]);
-    } catch (e) {
+    } catch (e: any) {
       setMessages(prev => [...prev, {
         role: 'agent',
-        text: 'Something went wrong. Please try again.',
+        text: `Error: ${e.message ?? 'Something went wrong. Please try again.'}`,
       }]);
     } finally {
       setAgentBusy(false);
@@ -436,7 +448,7 @@ const styles = StyleSheet.create({
   bubbleAgent:     { backgroundColor: '#1a1a1a', alignSelf: 'flex-start' },
   bubbleTag:       { color: '#4ade80', fontSize: 10, fontWeight: '700', marginBottom: 4 },
   bubbleText:      { color: '#ddd', fontSize: 14, lineHeight: 20 },
-  chatBar:         { flexDirection: 'row', padding: 12, gap: 10, backgroundColor: '#111', borderTopWidth: 0.5, borderTopColor: '#222',paddingBottom: 70 },
+  chatBar:         { flexDirection: 'row', padding: 12, gap: 10, backgroundColor: '#111', borderTopWidth: 0.5, borderTopColor: '#222', paddingBottom: 70 },
   chatInput:       { flex: 1, backgroundColor: '#1a1a1a', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, color: '#fff', fontSize: 14 },
   sendBtn:         { width: 44, height: 44, backgroundColor: '#4ade80', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   sendBtnText:     { color: '#052e16', fontSize: 20, fontWeight: '700' },

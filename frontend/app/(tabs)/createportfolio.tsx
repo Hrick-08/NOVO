@@ -6,9 +6,10 @@ import {
 import { useRouter } from 'expo-router';
 import { Colors } from '@/config/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { BASE_URL } from '@/config/api';
 
-const API = 'http://localhost:8000'; 
-const SESSION_ID = Math.random().toString(36).substring(7); 
+const API = BASE_URL;
+const SESSION_ID = Math.random().toString(36).substring(7);
 
 const colors = Colors.dark;
 

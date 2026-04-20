@@ -1,4 +1,4 @@
-export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL ?? 'https://tilt-passcode-hash.ngrok-free.dev';
+export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL ?? 'http://localhost:8000';
 console.log('[API] Base URL configured as:', BASE_URL);
 
 export const UPI_APPS = [

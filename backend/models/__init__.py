@@ -6,7 +6,7 @@ from .models import (
     AmazonCoupon,
     FlipkartCoupon,
     Purchase,
-    WithdrawLog
+    WithdrawLog,
     Event,
     EventParticipant,
     Squad,
@@ -22,6 +22,7 @@ __all__ = [
     "AmazonCoupon",
     "FlipkartCoupon",
     "Purchase",
+    "WithdrawLog",
     "Event",
     "EventParticipant",
     "Squad",

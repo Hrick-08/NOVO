@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Dimensions, StatusBar, ActivityIndicator, SafeAreaView, } from 'react-native';
 import Svg, { Path, Rect, Circle, Line as SvgLine, G, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-
+import { BASE_URL } from '@/config/api';
 
 type Stock = {
   id: string;
@@ -50,7 +50,7 @@ const PERIODS: Period[] = [
   { id: '5y', label: '5Y' },
 ];
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = BASE_URL;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 32;
@@ -245,72 +245,6 @@ export default function HomeScreen() {
 
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1, duration: 300, useNativeDriver: true,
-    }).start();
-  }, [screen, qIndex]);
-
-  // ── Quiz ──────────────────────────────────────────────────────────────────
-
-  async function handleAnswer(key: string) {
-    const q       = QUESTIONS[qIndex];
-    const updated = { ...answers, [q.id]: key };
-    setAnswers(updated);
-
-    if (qIndex < QUESTIONS.length - 1) {
-      fadeAnim.setValue(0);
-      setQIndex(qIndex + 1);
-    } else {
-      // All answered — score on backend
-      setLoading(true);
-      try {
-        const res  = await fetch(`${BASE_URL}/quiz/score`, {
-          method:  'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body:    JSON.stringify({ answers: updated }),
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`API Error: ${errText}`);
-        }
-        const data = await res.json();
-        setProfile(data);
-        setScreen('amount');
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    }
-  }
-
-  // ── Portfolio Build ───────────────────────────────────────────────────────
-
-  async function handleBuild() {
-    if (!amount || isNaN(Number(amount))) return;
-    setScreen('building');
-    try {
-      const res  = await fetch(`${BASE_URL}/portfolio/build`, {
-        method:  'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify({
-          profile_name: profile.profile,
-          total_score:  profile.total_score,
-          answers:      profile.answers,
-          amount:       parseFloat(amount),
-          session_id:   SESSION_ID,
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`API Error: ${errText}`);
-      }
     fetchMarketPulse();
   }, []);
 
@@ -323,31 +257,6 @@ export default function HomeScreen() {
     } catch (e) {
       console.log('Market pulse error', e);
     }
-  }
-
-
-  async function handleSend() {
-    if (!input.trim() || agentBusy) return;
-    const userMsg = input.trim();
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
-    setAgentBusy(true);
-
-    try {
-      const res  = await fetch(`${BASE_URL}/agent/chat`, {
-        method:  'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body:    JSON.stringify({ session_id: SESSION_ID, message: userMsg }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`API Error: ${errText}`);
-      }
-      const data = await res.json();
-      setMessages(prev => [...prev, { role: 'agent', text: data.reply }]);
   };
 
 

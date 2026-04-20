@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from db import get_db
 from models import MerchItem, AmazonCoupon, FlipkartCoupon
-
+from fastapi import Request
 router = APIRouter(prefix="/collections", tags=["collections"])
 
 

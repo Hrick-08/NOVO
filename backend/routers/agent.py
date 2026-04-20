@@ -45,7 +45,6 @@ def handle_simulate_investment(amount, risk_level, horizon_days=252):
     })
 
 
-
 def build_system_prompt():
     return """
 You are an AI investing assistant for beginners.
@@ -72,82 +71,100 @@ If any of the input from the user requires the above tools, return in the follow
 
 No explanation allowed with tool calls, JSON ONLY.
 
-If the question does not require any tools, you are free to answer in you own language.
+If the question does not require any tools, you are free to answer in your own language.
 
 """
 
+
 class InvestingAgent:
 
-    def __init__(self, portfolio = None):
-        self.portfolio= portfolio
+    def __init__(self, portfolio=None):
+        self.portfolio = portfolio
 
     def build_context(self):
         if not self.portfolio:
             return ""
 
-        holdings = "\n".join([f"{h['name']} ({h['ticker']}): {h['weight']}%"
-                              for h in self.portfolio["holdings"]
-                              ])
-        
-        return f"""User Portfolio: 
-                    {holdings}
+        holdings = "\n".join([
+            f"{h['name']} ({h['ticker']}): {h['weight']}%"
+            for h in self.portfolio["holdings"]
+        ])
 
-                    Risk: {self.portfolio["profile"]}
-                    Loss Probability: {self.portfolio["monte_carlo"]["loss_probability"]}%
+        return f"""User Portfolio:
+{holdings}
 
-                """
-        
+Risk: {self.portfolio["profile"]}
+Loss Probability: {self.portfolio["monte_carlo"]["loss_probability"]}%
+"""
 
-    def chat(self, user_message):
+    def chat(self, user_message: str) -> str:
         context = self.build_context()
         system_prompt = build_system_prompt()
 
         completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role":"system","content":system_prompt},
-            {"role":"system","content":context},
-            {"role": "user", "content": user_message}
-        ])
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": context},
+                {"role": "user",   "content": user_message},
+            ]
+        )
 
         response = completion.choices[0].message.content
-
         clean = response.strip()
 
+        # Strip markdown code fences if present
         if "```json" in clean:
             clean = clean.split("```json")[1].split("```")[0].strip()
-
         elif "```" in clean:
             clean = clean.split("```")[1].split("```")[0].strip()
 
-
+        # Try to parse as a tool call
         try:
             parsed = json.loads(clean)
 
             if parsed.get("tool") == "market_news":
-                return handle_search_market_news(parsed["query"])
+                result = handle_search_market_news(parsed["query"])
+                return f"Here's what I found about '{parsed['query']}':\n\n{result}"
 
             if parsed.get("tool") == "simulate_investment":
-                return handle_simulate_investment(
-                                                    parsed["amount"],
-                                                    parsed["risk_level"],
-                                                    parsed.get("horizon_days", 252)
-            )
-            
-        except:
-            pass
+                raw = handle_simulate_investment(
+                    parsed["amount"],
+                    parsed["risk_level"],
+                    parsed.get("horizon_days", 252),
+                )
+                data = json.loads(raw)
+                amount = parsed["amount"]
+                return (
+                    f"📊 Investment Simulation for ₹{amount:,.0f} "
+                    f"({parsed['risk_level'].capitalize()} profile, "
+                    f"{parsed.get('horizon_days', 252)} trading days)\n\n"
+                    f"• Median outcome:    ₹{data['median']:,.2f}\n"
+                    f"• Best case (90th):  ₹{data['best']:,.2f}\n"
+                    f"• Worst case (10th): ₹{data['worst']:,.2f}\n"
+                    f"• Loss probability:  {data['loss_probability']}%"
+                )
 
-        return clean
-        
+            # JSON but not a known tool — return as plain text
+            return clean
+
+        except (json.JSONDecodeError, KeyError):
+            # Not JSON — plain conversational reply from the model
+            return clean
 
 
 def run_agent():
     agent = InvestingAgent()
-
+    print("Investing Assistant ready. Type 'quit' to exit.\n")
     while True:
-        user_input = input("You: ")
+        user_input = input("You: ").strip()
         if user_input.lower() == "quit":
             break
+        if not user_input:
+            continue
+        response = agent.chat(user_input)
+        print(f"\nAssistant: {response}\n")
+
 
 if __name__ == "__main__":
     run_agent()

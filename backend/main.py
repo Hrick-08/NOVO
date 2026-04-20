@@ -33,7 +33,7 @@ import os
 
 
 # from agent import InvestingAgent
-from withdraw import router as withdraw_router
+from routers.withdraw import router as withdraw_router
 
 load_dotenv()
 
@@ -69,14 +69,14 @@ app.include_router(collections_router)
 app.include_router(purchases_router)
 app.include_router(community_router)
 app.include_router(qr_router)
+app.include_router(withdraw_router)
 
-# Serve static files
+# Serve static files — must come after all routers
 static_path = os.path.join(os.path.dirname(__file__), 'static')
 if os.path.exists(static_path):
     app.mount('/static', StaticFiles(directory=static_path), name='static')
 
-app.include_router(withdraw_router)
-# app.include_router(qr_router)
+
 def get_db():
     db = SessionLocal()
     try:
@@ -382,16 +382,15 @@ def build(body: InvestRequest):
 
 @app.post("/agent/chat")
 def chat(body: ChatRequest):
-    """Send a message to the agent. Session must exist (call /portfolio/build first)."""
     agent = agents.get(body.session_id)
     if not agent:
-        raise HTTPException(
-            404,
-            "Session not found. Please build a portfolio first."
-        )
+        # Session lost (server restart) — create a portfolio-less agent
+        # so the user can still chat without a hard 404 crash
+        agent = InvestingAgent(portfolio=None)
+        agents[body.session_id] = agent
     reply = agent.chat(body.message)
     return {"reply": reply}
-
+    
 
 @app.post("/agent/reset")
 def reset(body: ResetRequest):
@@ -464,6 +463,15 @@ def get_stock(
 
     hist = hist.reset_index()
     date_col = "Date" if "Date" in hist.columns else "Datetime"
+
+    # Drop any rows where Close is NaN (e.g. current partial week in 1y/1wk)
+    hist = hist.dropna(subset=["Close"])
+
+    if hist.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No valid close data for '{ticker}' period '{period}'.",
+        )
 
     dates  = hist[date_col].dt.strftime("%Y-%m-%d").tolist()
     closes = [round(float(v), 2) for v in hist["Close"].tolist()]
